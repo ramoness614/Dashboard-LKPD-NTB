@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lora:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg,#F1F5F0)}
+  ::selection{background:rgba(212,175,55,.3)}
+  select{font-family:inherit}
+  @keyframes ntbup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes ntbpulse{0%,100%{opacity:.55}50%{opacity:1}}
+  .ntb-scroll::-webkit-scrollbar{height:8px;width:8px}
+  .ntb-scroll::-webkit-scrollbar-thumb{background:var(--border,#dce6dd);border-radius:8px}
+</style>
+<script src="ntb-map-data.js"></script>
+</helmet>
+
+<div style="min-height:100vh;display:flex;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--text,#16271E);background:{{ pageBg }};{{ themeVars }}">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside style="position:sticky;top:0;align-self:flex-start;height:100vh;width:238px;flex-shrink:0;display:flex;flex-direction:column;background:var(--surface,#fff);border-right:1px solid var(--border,#dce6dd)">
+    <div style="padding:22px 20px 20px;display:flex;align-items:center;gap:12px">
+      <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--green,#1B6744),var(--green2,#289865));display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px -3px rgba(27,103,68,.5);flex-shrink:0">
+        <div style="width:14px;height:14px;background:var(--gold,#D4AF37);transform:rotate(45deg);border-radius:2px"></div>
+      </div>
+      <div style="line-height:1.1">
+        <div style="font-family:'Lora',serif;font-weight:700;font-size:17px;letter-spacing:-.2px;color:var(--text,#16271E)">APBD NTB</div>
+        <div style="font-size:9.5px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--muted,#62736A)">Transparansi Keuangan</div>
+      </div>
+    </div>
+    <nav style="flex:1;padding:10px 14px;display:flex;flex-direction:column;gap:4px;overflow:auto" class="ntb-scroll">
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted,#62736A);padding:6px 12px 4px">Menu</div>
+      <sc-for list="{{ navItems }}" as="nav" hint-placeholder-count="6">
+        <button onClick="{{ nav.onClick }}" style="{{ nav.btnStyle }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ nav.dot }};flex-shrink:0"></span>{{ nav.label }}</button>
+      </sc-for>
+    </nav>
+    <div style="padding:16px 18px;border-top:1px solid var(--border,#dce6dd);font-size:10.5px;line-height:1.5;color:var(--muted,#62736A)">Sumber: laporan APBD audit BPK · data ilustratif untuk pratinjau.</div>
+  </aside>
+
+  <!-- ===== MAIN COLUMN ===== -->
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;min-height:100vh">
+
+  <!-- top control bar -->
+  <header style="position:sticky;top:0;z-index:40;backdrop-filter:blur(12px);background:var(--headbg,rgba(241,245,240,.85));border-bottom:1px solid var(--border,#dce6dd)">
+    <div style="padding:0 26px;height:64px;display:flex;align-items:center;gap:14px">
+      <div style="flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--muted,#62736A)">{{ pageCrumb }}</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:7px;padding:0 10px;height:36px;border-radius:9px;background:var(--surface,#fff);border:1px solid var(--border,#dce6dd)">
+          <span style="font-size:11px;font-weight:600;color:var(--muted,#62736A)">Tahun</span>
+          <select value="{{ yearStr }}" onChange="{{ onYear }}" style="border:0;background:transparent;font-weight:700;font-size:13px;color:var(--text,#16271E);outline:none;cursor:pointer">
+            <sc-for list="{{ years }}" as="y" hint-placeholder-count="5"><option value="{{ y.v }}">{{ y.label }}</option></sc-for>
+          </select>
+        </div>
+        <button onClick="{{ onUnit }}" title="Satuan" style="height:36px;padding:0 11px;border-radius:9px;border:1px solid var(--border,#dce6dd);background:var(--surface,#fff);color:var(--muted,#62736A);font-weight:700;font-size:12px;cursor:pointer">{{ unitLabel }}</button>
+        <button onClick="{{ onExport }}" title="Ekspor CSV" style="height:36px;padding:0 12px;border-radius:9px;border:1px solid var(--border,#dce6dd);background:var(--surface,#fff);color:var(--text,#16271E);font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px;line-height:1">↓</span>CSV
+        </button>
+        <button onClick="{{ onDark }}" title="Mode gelap" style="width:36px;height:36px;border-radius:9px;border:1px solid var(--border,#dce6dd);background:var(--surface,#fff);color:var(--text,#16271E);font-weight:700;cursor:pointer;font-size:14px">{{ darkIcon }}</button>
+      </div>
+    </div>
+  </header>
+
+  <main style="flex:1;max-width:1320px;width:100%;margin:0 auto;padding:26px 26px 60px">
+
+  <!-- ===================== BERANDA ===================== -->
+  <sc-if value="{{ isBeranda }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <!-- title row -->
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px">
+        <div>
+          <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--gold,#D4AF37)"></div>
+            <span style="font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold-dark,#7A631A)">Ringkasan Provinsi · {{ yearStr }}</span>
+          </div>
+          <h1 style="font-family:'Lora',serif;font-weight:700;font-size:30px;letter-spacing:-.5px;line-height:1.1">Keuangan Daerah Nusa Tenggara Barat</h1>
+          <p style="margin-top:7px;font-size:13.5px;color:var(--muted,#62736A);max-width:560px">Rangkuman APBD 1 provinsi & 10 kabupaten/kota — bersumber dari laporan yang telah diaudit BPK.</p>
+        </div>
+      </div>
+
+      <!-- KPI cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">
+        <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+          <div style="position:relative;overflow:hidden;background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:15px;padding:17px 18px;box-shadow:0 1px 2px rgba(20,40,28,.04),0 14px 30px -22px rgba(20,40,28,.3)">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:{{ k.bar }}"></div>
+            <div style="font-size:11.5px;font-weight:600;color:var(--muted,#62736A);letter-spacing:.2px">{{ k.label }}</div>
+            <div style="font-size:25px;font-weight:800;letter-spacing:-.6px;margin-top:8px;font-variant-numeric:tabular-nums">{{ k.value }}</div>
+            <div style="margin-top:7px;display:flex;align-items:center;gap:7px">
+              <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:{{ k.deltaBg }};color:{{ k.deltaFg }}">{{ k.delta }}</span>
+              <span style="font-size:11px;color:var(--muted,#62736A)">{{ k.sub }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- main grid: map + side -->
+      <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:14px">
+        <!-- LEFT: map + peringkat serapan -->
+        <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+        <!-- MAP -->
+        <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px 20px;box-shadow:0 14px 34px -26px rgba(20,40,28,.35)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px">
+            <div style="min-width:0">
+              <div style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700">
+                <button onClick="{{ onMapIndonesia }}" style="{{ crumbIdnStyle }}">Indonesia</button>
+                <sc-if value="{{ mapAtNtb }}" hint-placeholder-val="{{ false }}"><span style="color:var(--muted,#62736A)">›</span><span style="color:var(--gold-dark,#7A631A)">Nusa Tenggara Barat</span></sc-if>
+              </div>
+              <p style="font-size:12px;color:var(--muted,#62736A);margin-top:3px">{{ mapHint }}</p>
+            </div>
+            <sc-if value="{{ mapAtNtb }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:center;gap:9px;flex-shrink:0">
+                <span style="font-size:10.5px;color:var(--muted,#62736A);font-weight:600">Rendah</span>
+                <div style="width:78px;height:9px;border-radius:6px;background:linear-gradient(90deg,#C9E2D3,#289865,#15512F)"></div>
+                <span style="font-size:10.5px;color:var(--muted,#62736A);font-weight:600">Tinggi</span>
+              </div>
+            </sc-if>
+          </div>
+          <div style="position:relative;margin-top:8px;border-radius:12px;background:var(--mapsea,#DCE9F2);border:1px solid var(--border,#dce6dd);overflow:hidden">
+            <!-- INDONESIA LEVEL -->
+            <sc-if value="{{ mapAtIndonesia }}" hint-placeholder-val="{{ true }}">
+              <svg viewBox="{{ idnViewBox }}" style="width:100%;height:auto;display:block">
+                <sc-for list="{{ idnProvinces }}" as="p" hint-placeholder-count="32">
+                  <path d="{{ p.path }}" fill="{{ p.fill }}" stroke="{{ p.stroke }}" stroke-width="{{ p.sw }}" style="{{ p.style }}" onClick="{{ p.onClick }}" onMouseEnter="{{ p.onEnter }}" onMouseLeave="{{ p.onLeave }}"></path>
+                </sc-for>
+                <circle cx="{{ idnMarkerX }}" cy="{{ idnMarkerY }}" r="9" fill="none" stroke="var(--gold,#D4AF37)" stroke-width="2.5" style="animation:ntbpulse 1.8s infinite"></circle>
+              </svg>
+              <button onClick="{{ onMapNtb }}" style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);height:34px;padding:0 16px;border-radius:9px;border:0;background:linear-gradient(135deg,var(--green,#1B6744),var(--green2,#289865));color:#fff;font-weight:700;font-size:12.5px;cursor:pointer;box-shadow:0 8px 18px -7px rgba(27,103,68,.7);display:flex;align-items:center;gap:7px">Masuk ke Peta NTB <span>→</span></button>
+            </sc-if>
+            <!-- NTB LEVEL -->
+            <sc-if value="{{ mapAtNtb }}" hint-placeholder-val="{{ false }}">
+              <svg viewBox="{{ ntbViewBox }}" style="width:100%;height:auto;display:block">
+                <sc-for list="{{ ntbRegions }}" as="r" hint-placeholder-count="10">
+                  <path d="{{ r.path }}" fill="{{ r.fill }}" stroke="{{ r.stroke }}" stroke-width="{{ r.sw }}" style="{{ r.style }}" onClick="{{ r.onClick }}" onMouseEnter="{{ r.onEnter }}" onMouseLeave="{{ r.onLeave }}"></path>
+                </sc-for>
+                <sc-for list="{{ ntbLabels }}" as="l" hint-placeholder-count="10">
+                  <text x="{{ l.x }}" y="{{ l.y }}" text-anchor="middle" font-size="{{ l.size }}" font-weight="800" fill="{{ l.color }}" style="pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.35)">{{ l.short }}</text>
+                </sc-for>
+              </svg>
+              <div style="position:absolute;left:12px;top:11px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text,#16271E);opacity:.55">Lombok</div>
+              <div style="position:absolute;right:12px;top:11px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text,#16271E);opacity:.55">Sumbawa</div>
+            </sc-if>
+            <!-- hover tooltip -->
+            <sc-if value="{{ mapHasHover }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;left:12px;bottom:12px;background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:10px;padding:8px 12px;box-shadow:0 10px 24px -12px rgba(20,40,28,.5);pointer-events:none">
+                <div style="font-size:12.5px;font-weight:700">{{ mapHoverName }}</div>
+                <div style="font-size:11px;color:var(--muted,#62736A);margin-top:1px">{{ mapHoverSub }}</div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+        <!-- PERINGKAT SERAPAN (di bawah peta) -->
+        <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:17px 18px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:11px">
+            <h3 style="font-size:14.5px;font-weight:700;white-space:nowrap">Peringkat Serapan</h3>
+            <span style="font-size:10.5px;font-weight:600;color:var(--muted,#62736A);text-align:right">Realisasi vs target</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <sc-for list="{{ ranking }}" as="r" hint-placeholder-count="10">
+              <button onClick="{{ r.onClick }}" style="display:flex;align-items:center;gap:11px;background:none;border:0;padding:0;cursor:pointer;text-align:left;width:100%">
+                <span style="width:19px;font-size:12px;font-weight:800;color:var(--gold-dark,#7A631A);font-variant-numeric:tabular-nums">{{ r.rank }}</span>
+                <span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:{{ rankColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+                <div style="width:140px;height:6px;border-radius:5px;background:var(--surface2,#EAF1EA);overflow:hidden"><div style="height:100%;border-radius:5px;background:var(--green2,#289865);width:{{ r.w }}%"></div></div>
+                <span style="width:46px;text-align:right;font-size:12.5px;font-weight:800;color:{{ rankColor }};font-variant-numeric:tabular-nums">{{ r.ser }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        </div>
+
+        <!-- SIDE: comparison bars + ranking -->
+        <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+          <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:17px 18px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <h3 style="font-size:14.5px;font-weight:700">Perbandingan Antar Daerah</h3>
+            </div>
+            <div style="display:flex;gap:5px;margin:10px 0 6px">
+              <sc-for list="{{ metricTabs }}" as="m" hint-placeholder-count="3">
+                <button onClick="{{ m.onClick }}" style="{{ m.style }}">{{ m.label }}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:6px;height:170px;padding-top:10px">
+              <sc-for list="{{ bars }}" as="b" hint-placeholder-count="10">
+                <button onClick="{{ b.onClick }}" title="{{ b.title }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;cursor:pointer;height:100%;justify-content:flex-end">
+                  <div style="font-size:9px;font-weight:700;color:var(--muted,#62736A);font-variant-numeric:tabular-nums">{{ b.short2 }}</div>
+                  <div style="width:100%;max-width:26px;border-radius:5px 5px 2px 2px;background:{{ b.color }};height:{{ b.h }}px;transition:height .4s"></div>
+                  <div style="font-size:9px;font-weight:600;color:var(--muted,#62736A);writing-mode:vertical-rl;transform:rotate(180deg);height:38px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ b.short }}</div>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:17px 18px;flex:1">
+            <h3 style="font-size:14.5px;font-weight:700;margin-bottom:10px">{{ rankMetricTitle }}</h3>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <sc-for list="{{ rankingMetric }}" as="r" hint-placeholder-count="10">
+                <button onClick="{{ r.onClick }}" style="display:flex;align-items:center;gap:10px;background:none;border:0;padding:0;cursor:pointer;text-align:left;width:100%">
+                  <span style="width:19px;font-size:12px;font-weight:800;color:var(--gold-dark,#7A631A);font-variant-numeric:tabular-nums">{{ r.rank }}</span>
+                  <span style="flex:1;min-width:0;font-size:12px;font-weight:600;color:{{ rankColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+                  <div style="width:64px;height:6px;border-radius:5px;background:var(--surface2,#EAF1EA);overflow:hidden"><div style="height:100%;border-radius:5px;background:var(--green2,#289865);width:{{ r.w }}%"></div></div>
+                  <span style="width:48px;text-align:right;font-size:12px;font-weight:800;color:{{ rankColor }};font-variant-numeric:tabular-nums">{{ r.val }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Province trend -->
+      <div style="margin-top:14px;background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px">
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
+          <div>
+            <h3 style="font-size:15px;font-weight:700">{{ trendTitle }}</h3>
+            <p style="font-size:12px;color:var(--muted,#62736A);margin-top:2px">{{ trendSub }}</p>
+          </div>
+          <div style="display:flex;gap:5px">
+            <sc-for list="{{ trendTabs }}" as="t" hint-placeholder-count="3">
+              <button onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <svg viewBox="0 0 760 230" style="width:100%;height:auto;display:block">
+          <defs><linearGradient id="ntbArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--green2,#289865)" stop-opacity="0.28"/><stop offset="100%" stop-color="var(--green2,#289865)" stop-opacity="0"/></linearGradient></defs>
+          <sc-for list="{{ trendGrid }}" as="g" hint-placeholder-count="4"><line x1="44" y1="{{ g.y }}" x2="752" y2="{{ g.y }}" stroke="var(--border,#dce6dd)" stroke-width="1"/></sc-for>
+          <path d="{{ trendArea }}" fill="url(#ntbArea)"/>
+          <polyline points="{{ trendPoints }}" fill="none" stroke="var(--green,#1B6744)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+          <sc-for list="{{ trendDots }}" as="d" hint-placeholder-count="5">
+            <circle cx="{{ d.x }}" cy="{{ d.y }}" r="5" fill="var(--surface,#fff)" stroke="var(--green,#1B6744)" stroke-width="3"/>
+            <text x="{{ d.x }}" y="{{ d.ty }}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text,#16271E)">{{ d.val }}</text>
+            <text x="{{ d.x }}" y="222" text-anchor="middle" font-size="11" font-weight="600" fill="var(--muted,#62736A)">{{ d.year }}</text>
+          </sc-for>
+        </svg>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===================== DETAIL DAERAH ===================== -->
+  <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px">
+        <div>
+          <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--gold,#D4AF37)"></div>
+            <span style="font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold-dark,#7A631A)">Detail Daerah · {{ yearStr }}</span>
+          </div>
+          <h1 style="font-family:'Lora',serif;font-weight:700;font-size:28px;letter-spacing:-.4px">{{ detRegionName }}</h1>
+        </div>
+        <select value="{{ detRegion }}" onChange="{{ onDetRegion }}" style="height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--border,#dce6dd);background:var(--surface,#fff);color:var(--text,#16271E);font-weight:700;font-size:13px;cursor:pointer">
+          <sc-for list="{{ regionOpts }}" as="o" hint-placeholder-count="11"><option value="{{ o.v }}">{{ o.label }}</option></sc-for>
+        </select>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px">
+        <sc-for list="{{ detKpis }}" as="k" hint-placeholder-count="4">
+          <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:15px;padding:16px 18px;position:relative;overflow:hidden">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:{{ k.bar }}"></div>
+            <div style="font-size:11.5px;font-weight:600;color:var(--muted,#62736A)">{{ k.label }}</div>
+            <div style="font-size:23px;font-weight:800;letter-spacing:-.5px;margin-top:7px;font-variant-numeric:tabular-nums">{{ k.value }}</div>
+            <div style="font-size:11px;color:var(--muted,#62736A);margin-top:5px">{{ k.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:grid;grid-template-columns:340px 1fr;gap:14px">
+        <!-- donut -->
+        <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px">
+          <h3 style="font-size:14.5px;font-weight:700;margin-bottom:14px">Komposisi Belanja</h3>
+          <div style="display:flex;justify-content:center;margin:4px 0 16px">
+            <div style="position:relative;width:182px;height:182px;border-radius:50%;background:{{ donutBg }}">
+              <div style="position:absolute;inset:30px;border-radius:50%;background:var(--surface,#fff);display:flex;flex-direction:column;align-items:center;justify-content:center">
+                <div style="font-size:10px;color:var(--muted,#62736A);font-weight:600">Total Belanja</div>
+                <div style="font-size:17px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums">{{ detTotalExp }}</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <sc-for list="{{ donutLegend }}" as="d" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:9px">
+                <span style="width:11px;height:11px;border-radius:3px;background:{{ d.color }};flex-shrink:0"></span>
+                <span style="flex:1;font-size:12px;font-weight:600">{{ d.label }}</span>
+                <span style="font-size:12px;font-weight:700;color:var(--muted,#62736A);font-variant-numeric:tabular-nums">{{ d.pct }}</span>
+                <span style="width:78px;text-align:right;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums">{{ d.val }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- trend + table -->
+        <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+          <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px">
+            <h3 style="font-size:14.5px;font-weight:700;margin-bottom:6px">Tren Realisasi 2021–2025</h3>
+            <svg viewBox="0 0 700 200" style="width:100%;height:auto;display:block">
+              <defs><linearGradient id="ntbArea2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--gold,#D4AF37)" stop-opacity="0.3"/><stop offset="100%" stop-color="var(--gold,#D4AF37)" stop-opacity="0"/></linearGradient></defs>
+              <path d="{{ detTrendArea }}" fill="url(#ntbArea2)"/>
+              <polyline points="{{ detTrendPoints }}" fill="none" stroke="var(--gold-dark,#7A631A)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+              <sc-for list="{{ detTrendDots }}" as="d" hint-placeholder-count="5">
+                <circle cx="{{ d.x }}" cy="{{ d.y }}" r="4.5" fill="var(--surface,#fff)" stroke="var(--gold-dark,#7A631A)" stroke-width="3"/>
+                <text x="{{ d.x }}" y="{{ d.ty }}" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--text,#16271E)">{{ d.val }}</text>
+                <text x="{{ d.x }}" y="194" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--muted,#62736A)">{{ d.year }}</text>
+              </sc-for>
+            </svg>
+          </div>
+
+          <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px">
+            <h3 style="font-size:14.5px;font-weight:700;margin-bottom:12px">Rincian Anggaran vs Realisasi</h3>
+            <div style="display:grid;grid-template-columns:1fr 110px 110px 60px;gap:6px 10px;font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted,#62736A);padding-bottom:8px;border-bottom:1px solid var(--border,#dce6dd)">
+              <div>Komponen</div><div style="text-align:right">Anggaran</div><div style="text-align:right">Realisasi</div><div style="text-align:right">%</div>
+            </div>
+            <sc-for list="{{ detRows }}" as="row" hint-placeholder-count="7">
+              <div style="display:grid;grid-template-columns:1fr 110px 110px 60px;gap:6px 10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border,#dce6dd);{{ row.rowStyle }}">
+                <div style="font-size:12.5px;font-weight:{{ row.fw }}">{{ row.label }}</div>
+                <div style="text-align:right;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--muted,#62736A)">{{ row.planned }}</div>
+                <div style="text-align:right;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums">{{ row.realized }}</div>
+                <div style="text-align:right;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:{{ row.pctColor }}">{{ row.pct }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;display:flex;justify-content:flex-end">
+        <button onClick="{{ goRekFromDetail }}" style="height:42px;padding:0 18px;border-radius:11px;border:0;background:linear-gradient(135deg,var(--green,#1B6744),var(--green2,#289865));color:#fff;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 8px 20px -8px rgba(27,103,68,.6)">Lihat Rekomendasi Pemeriksaan <span>→</span></button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===================== LAPORAN KEUANGAN ===================== -->
+  <sc-if value="{{ isLaporan }}" hint-placeholder-val="{{ false }}">
+    <div>
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:16px">
+        <div>
+          <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--gold,#D4AF37)"></div>
+            <span style="font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold-dark,#7A631A)">Laporan Keuangan · {{ yearStr }}</span>
+          </div>
+          <h1 style="font-family:'Lora',serif;font-weight:700;font-size:28px;letter-spacing:-.4px">{{ lapRegionName }}</h1>
+          <div style="margin-top:9px;display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;padding:4px 11px;border-radius:8px;{{ lapBadgeStyle }}">{{ lapBadge }}</div>
+        </div>
+        <select value="{{ detRegion }}" onChange="{{ onDetRegion }}" style="height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--border,#dce6dd);background:var(--surface,#fff);color:var(--text,#16271E);font-weight:700;font-size:13px;cursor:pointer">
+          <sc-for list="{{ regionOpts }}" as="o" hint-placeholder-count="11"><option value="{{ o.v }}">{{ o.label }}</option></sc-for>
+        </select>
+      </div>
+
+      <!-- mode toggle -->
+      <div style="display:flex;gap:4px;padding:4px;border-radius:11px;background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);width:-moz-fit-content;width:fit-content;margin-bottom:16px">
+        <button onClick="{{ onLapModePer }}" style="{{ lapModePerStyle }}">Per Daerah</button>
+        <button onClick="{{ onLapModeCmp }}" style="{{ lapModeCmpStyle }}">Perbandingan</button>
+      </div>
+
+      <sc-if value="{{ lapSingle }}" hint-placeholder-val="{{ true }}">
+      <div>
+      <!-- statement filter -->
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+        <sc-for list="{{ lapTabs }}" as="t" hint-placeholder-count="6">
+          <button onClick="{{ t.onClick }}" title="{{ t.full }}" style="{{ t.style }}">{{ t.label }}</button>
+        </sc-for>
+      </div>
+
+      <!-- statement table -->
+      <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px;margin-bottom:18px">
+        <div style="margin-bottom:14px">
+          <h3 style="font-size:16px;font-weight:700;font-family:'Lora',serif">{{ lapStmtTitle }}</h3>
+          <p style="font-size:12px;color:var(--muted,#62736A);margin-top:3px">{{ lapStmtSub }}</p>
+        </div>
+        <div class="ntb-scroll" style="overflow-x:auto">
+          <div style="min-width:540px">
+            <div style="display:grid;grid-template-columns:{{ lapGrid }};gap:4px 10px;padding:0 12px 9px;border-bottom:1.5px solid var(--border,#dce6dd)">
+              <div style="font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted,#62736A)">Uraian</div>
+              <sc-for list="{{ lapCols }}" as="c" hint-placeholder-count="4"><div style="font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted,#62736A);text-align:right">{{ c.name }}</div></sc-for>
+            </div>
+            <sc-for list="{{ lapRows }}" as="row" hint-placeholder-count="14">
+              <div style="display:grid;grid-template-columns:{{ lapGrid }};gap:4px 10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border,#dce6dd);background:{{ row.bg }}">
+                <div style="font-size:12.5px;font-weight:{{ row.weight }};color:{{ row.color }};padding-left:{{ row.pad }}">{{ row.label }}</div>
+                <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="4">
+                  <div style="text-align:right;font-size:12.5px;font-weight:{{ cell.w }};color:{{ cell.color }};font-variant-numeric:tabular-nums">{{ cell.t }}</div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- ratio analysis -->
+      <div style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:5px">
+          <div style="width:6px;height:6px;border-radius:50%;background:var(--gold,#D4AF37)"></div>
+          <span style="font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold-dark,#7A631A)">Analisis Rasio</span>
+        </div>
+        <h2 style="font-family:'Lora',serif;font-weight:700;font-size:22px;letter-spacing:-.3px">Analisis Rasio atas Laporan Keuangan</h2>
+        <p style="margin-top:6px;font-size:13px;color:var(--muted,#62736A);max-width:640px">Rasio dihitung langsung dari pos-pos Neraca, LRA, dan LO. Label menilai tiap rasio terhadap ambang batas standar keuangan daerah.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+        <sc-for list="{{ lapRatioCats }}" as="cat" hint-placeholder-count="5">
+          <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px">
+            <h3 style="font-size:14.5px;font-weight:700;margin-bottom:13px">{{ cat.name }}</h3>
+            <div style="display:flex;flex-direction:column;gap:13px">
+              <sc-for list="{{ cat.items }}" as="it" hint-placeholder-count="3">
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                  <div style="width:3px;align-self:stretch;border-radius:3px;background:{{ it.bar }};flex-shrink:0;min-height:42px"></div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                      <span style="font-size:12.5px;font-weight:700;line-height:1.25">{{ it.label }}</span>
+                      <span style="font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;flex-shrink:0">{{ it.val }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                      <span style="font-size:9px;font-weight:800;letter-spacing:.3px;padding:2px 7px;border-radius:6px;flex-shrink:0;{{ it.pill }}">{{ it.statusLabel }}</span>
+                      <span style="font-size:10.5px;color:var(--muted,#62736A);font-style:italic">{{ it.formula }}</span>
+                    </div>
+                    <p style="font-size:11.5px;line-height:1.45;color:var(--muted,#62736A)">{{ it.note }}</p>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== PERBANDINGAN ANTAR DAERAH ===== -->
+      <sc-if value="{{ lapCompareOn }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <p style="font-size:13.5px;color:var(--muted,#62736A);max-width:680px;margin-bottom:14px">Pilih jenis laporan dan daerah untuk membandingkan laporan keuangannya berdampingan (maks. 4 daerah).</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+          <sc-for list="{{ lapTabs }}" as="t" hint-placeholder-count="6">
+            <button onClick="{{ t.onClick }}" title="{{ t.full }}" style="{{ t.style }}">{{ t.label }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px">
+          <sc-for list="{{ lapChips }}" as="c" hint-placeholder-count="10">
+            <button onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.name }}</button>
+          </sc-for>
+        </div>
+        <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px">
+          <div style="margin-bottom:12px">
+            <h3 style="font-size:16px;font-weight:700;font-family:'Lora',serif">{{ lapStmtTitle }}</h3>
+            <p style="font-size:12px;color:var(--muted,#62736A);margin-top:3px">{{ lapCmpBasis }}</p>
+          </div>
+          <div class="ntb-scroll" style="overflow-x:auto">
+            <div style="min-width:520px">
+              <div style="display:grid;grid-template-columns:{{ lapCmpGrid }};gap:4px 10px;padding:0 12px 9px;border-bottom:1.5px solid var(--border,#dce6dd)">
+                <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--muted,#62736A)">Uraian</div>
+                <sc-for list="{{ lapCmpRegions }}" as="rg" hint-placeholder-count="3"><div style="font-size:11px;font-weight:800;text-align:right;color:{{ rg.color }}">{{ rg.name }}</div></sc-for>
+              </div>
+              <sc-for list="{{ lapCmpRows }}" as="row" hint-placeholder-count="14">
+                <div style="display:grid;grid-template-columns:{{ lapCmpGrid }};gap:4px 10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border,#dce6dd);background:{{ row.bg }}">
+                  <div style="font-size:12.5px;font-weight:{{ row.weight }};color:{{ row.color }};padding-left:{{ row.pad }}">{{ row.label }}</div>
+                  <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="3">
+                    <div style="text-align:right;font-size:12.5px;font-weight:{{ cell.w }};color:{{ cell.color }};font-variant-numeric:tabular-nums">{{ cell.t }}</div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <!-- ===================== RASIO KINERJA ===================== -->
+  <sc-if value="{{ isRasio }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <div style="margin-bottom:18px">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
+          <div style="width:6px;height:6px;border-radius:50%;background:var(--gold,#D4AF37)"></div>
+          <span style="font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold-dark,#7A631A)">Analisis Rasio Kinerja · {{ yearStr }}</span>
+        </div>
+        <h1 style="font-family:'Lora',serif;font-weight:700;font-size:28px;letter-spacing:-.4px">Rasio Kinerja Keuangan</h1>
+        <p style="margin-top:7px;font-size:13.5px;color:var(--muted,#62736A);max-width:620px">Pilih daerah untuk dibandingkan (maks. 4). Label otomatis menilai tiap rasio terhadap ambang batas standar.</p>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px">
+        <sc-for list="{{ regionChips }}" as="c" hint-placeholder-count="10">
+          <button onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.name }}</button>
+        </sc-for>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:14px">
+        <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px;overflow:auto" class="ntb-scroll">
+          <h3 style="font-size:14.5px;font-weight:700;margin-bottom:12px">Tabel Perbandingan Rasio</h3>
+          <table style="width:100%;border-collapse:collapse;min-width:560px">
+            <thead><tr>
+              <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted,#62736A);padding:0 8px 9px 0">Rasio</th>
+              <sc-for list="{{ ratioCols }}" as="col" hint-placeholder-count="3"><th style="text-align:center;font-size:11px;font-weight:700;padding:0 4px 9px;color:{{ col.color }}">{{ col.name }}</th></sc-for>
+            </tr></thead>
+            <tbody>
+              <sc-for list="{{ ratioRows }}" as="row" hint-placeholder-count="6">
+                <tr style="border-top:1px solid var(--border,#dce6dd)">
+                  <td style="padding:11px 8px 11px 0;max-width:180px">
+                    <div style="font-size:12.5px;font-weight:700">{{ row.label }}</div>
+                    <div style="font-size:10.5px;color:var(--muted,#62736A);margin-top:1px">{{ row.desc }}</div>
+                  </td>
+                  <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="3">
+                    <td style="padding:11px 4px;text-align:center">
+                      <div style="font-size:14px;font-weight:800;font-variant-numeric:tabular-nums">{{ cell.val }}</div>
+                      <div style="display:inline-block;margin-top:4px;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:6px;{{ cell.pill }}">{{ cell.label }}</div>
+                    </td>
+                  </sc-for>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- radar -->
+        <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px">
+          <h3 style="font-size:14.5px;font-weight:700;margin-bottom:4px">Profil Rasio (Radar)</h3>
+          <svg viewBox="0 0 320 300" style="width:100%;height:auto;display:block">
+            <sc-for list="{{ radarRings }}" as="g" hint-placeholder-count="3"><polygon points="{{ g.points }}" fill="none" stroke="var(--border,#dce6dd)" stroke-width="1"/></sc-for>
+            <sc-for list="{{ radarAxes }}" as="a" hint-placeholder-count="6">
+              <line x1="160" y1="148" x2="{{ a.x }}" y2="{{ a.y }}" stroke="var(--border,#dce6dd)" stroke-width="1"/>
+              <text x="{{ a.lx }}" y="{{ a.ly }}" text-anchor="{{ a.anchor }}" font-size="9.5" font-weight="700" fill="var(--muted,#62736A)">{{ a.label }}</text>
+            </sc-for>
+            <sc-for list="{{ radarShapes }}" as="s" hint-placeholder-count="3"><polygon points="{{ s.points }}" fill="{{ s.fill }}" stroke="{{ s.stroke }}" stroke-width="2"/></sc-for>
+          </svg>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
+            <sc-for list="{{ radarLegend }}" as="l" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:8px"><span style="width:11px;height:11px;border-radius:3px;background:{{ l.color }}"></span><span style="font-size:12px;font-weight:600">{{ l.name }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===================== REKOMENDASI ===================== -->
+  <sc-if value="{{ isRek }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <div style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
+          <div style="width:6px;height:6px;border-radius:50%;background:var(--gold,#D4AF37)"></div>
+          <span style="font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold-dark,#7A631A)">Berbasis AI · {{ yearStr }}</span>
+        </div>
+        <h1 style="font-family:'Lora',serif;font-weight:700;font-size:28px;letter-spacing:-.4px">Rekomendasi Pemeriksaan Selanjutnya</h1>
+        <p style="margin-top:7px;font-size:13.5px;color:var(--muted,#62736A);max-width:640px">Area fokus audit yang dihasilkan otomatis dari analisis anomali — serapan ekstrem, rasio “Perlu Perhatian”, dan deviasi belanja.</p>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px">
+        <div style="display:flex;gap:4px;padding:4px;border-radius:11px;background:var(--surface,#fff);border:1px solid var(--border,#dce6dd)">
+          <sc-for list="{{ priTabs }}" as="p" hint-placeholder-count="4"><button onClick="{{ p.onClick }}" style="{{ p.style }}">{{ p.label }}</button></sc-for>
+        </div>
+        <select value="{{ rekRegion }}" onChange="{{ onRekRegion }}" style="height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--border,#dce6dd);background:var(--surface,#fff);color:var(--text,#16271E);font-weight:700;font-size:12.5px;cursor:pointer">
+          <sc-for list="{{ rekRegionOpts }}" as="o" hint-placeholder-count="11"><option value="{{ o.v }}">{{ o.label }}</option></sc-for>
+        </select>
+        <div style="flex:1"></div>
+        <div style="display:flex;gap:8px">
+          <sc-for list="{{ priCounts }}" as="pc" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:9px;background:{{ pc.bg }}"><span style="font-size:16px;font-weight:800;color:{{ pc.fg }};font-variant-numeric:tabular-nums">{{ pc.n }}</span><span style="font-size:11px;font-weight:600;color:{{ pc.fg }}">{{ pc.label }}</span></div></sc-for>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+        <sc-for list="{{ recCards }}" as="rec" hint-placeholder-count="6">
+          <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:15px;padding:17px 18px;border-left:4px solid {{ rec.accent }};display:flex;flex-direction:column;gap:9px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <span style="font-size:11px;font-weight:700;color:var(--muted,#62736A)">{{ rec.region }}</span>
+              <span style="font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:3px 9px;border-radius:7px;{{ rec.pill }}">{{ rec.priority }}</span>
+            </div>
+            <h4 style="font-size:15px;font-weight:700;line-height:1.3;letter-spacing:-.2px">{{ rec.title }}</h4>
+            <p style="font-size:12.5px;line-height:1.5;color:var(--muted,#62736A)">{{ rec.reason }}</p>
+            <button onClick="{{ rec.onClick }}" style="align-self:flex-start;margin-top:2px;font-size:11.5px;font-weight:700;color:var(--green,#1B6744);background:none;border:0;cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:5px">{{ rec.refLabel }} <span>→</span></button>
+          </div>
+        </sc-for>
+      </div>
+      <sc-if value="{{ recEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align:center;padding:50px;color:var(--muted,#62736A);font-size:13px">Tidak ada rekomendasi untuk filter ini.</div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <!-- ===================== ADMIN ===================== -->
+  <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <!-- gate -->
+      <sc-if value="{{ adminLocked }}" hint-placeholder-val="{{ true }}">
+        <div style="max-width:420px;margin:40px auto;background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:18px;padding:34px 32px;text-align:center;box-shadow:0 24px 60px -40px rgba(20,40,28,.5)">
+          <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--green,#1B6744),var(--green2,#289865));margin:0 auto 18px;display:flex;align-items:center;justify-content:center"><div style="width:18px;height:18px;background:var(--gold,#D4AF37);transform:rotate(45deg);border-radius:3px"></div></div>
+          <h2 style="font-family:'Lora',serif;font-size:22px;font-weight:700">Panel Admin</h2>
+          <p style="font-size:13px;color:var(--muted,#62736A);margin-top:8px;line-height:1.5">Akses terbatas untuk admin terpercaya. Masuk untuk mengunggah laporan BPK dan memperbarui data.</p>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:22px;text-align:left">
+            <input placeholder="email@bpk.go.id" style="height:44px;padding:0 14px;border-radius:11px;border:1px solid var(--border,#dce6dd);background:var(--surface2,#EAF1EA);font-size:13px;font-family:inherit;color:var(--text,#16271E)"/>
+            <input type="password" placeholder="••••••••" style="height:44px;padding:0 14px;border-radius:11px;border:1px solid var(--border,#dce6dd);background:var(--surface2,#EAF1EA);font-size:13px;font-family:inherit;color:var(--text,#16271E)"/>
+          </div>
+          <button onClick="{{ onLogin }}" style="width:100%;height:46px;margin-top:16px;border-radius:11px;border:0;background:linear-gradient(135deg,var(--green,#1B6744),var(--green2,#289865));color:#fff;font-weight:700;font-size:14px;cursor:pointer">Masuk dengan InsForge Auth</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ adminUnlocked }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px">
+            <div>
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
+                <span style="width:7px;height:7px;border-radius:50%;background:var(--green2,#289865);animation:ntbpulse 1.8s infinite"></span>
+                <span style="font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--green,#1B6744)">Terhubung · InsForge</span>
+              </div>
+              <h1 style="font-family:'Lora',serif;font-weight:700;font-size:26px">Unggah Laporan BPK</h1>
+            </div>
+            <button onClick="{{ onLogout }}" style="height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--border,#dce6dd);background:var(--surface,#fff);color:var(--muted,#62736A);font-weight:700;font-size:12.5px;cursor:pointer">Keluar</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:20px">
+              <h3 style="font-size:14.5px;font-weight:700;margin-bottom:14px">Impor Data Baru</h3>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+                <div><label style="font-size:11px;font-weight:600;color:var(--muted,#62736A);display:block;margin-bottom:5px">Tahun Anggaran</label>
+                  <select style="width:100%;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border,#dce6dd);background:var(--surface2,#EAF1EA);font-weight:600;font-size:13px;color:var(--text,#16271E)"><option>2025</option><option>2024</option><option>2023</option></select></div>
+                <div><label style="font-size:11px;font-weight:600;color:var(--muted,#62736A);display:block;margin-bottom:5px">Daerah</label>
+                  <select style="width:100%;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border,#dce6dd);background:var(--surface2,#EAF1EA);font-weight:600;font-size:13px;color:var(--text,#16271E)"><option>Kota Mataram</option><option>Kab. Lombok Barat</option><option>Provinsi NTB</option></select></div>
+              </div>
+              <div style="border:2px dashed var(--border,#cbdccf);border-radius:13px;padding:26px;text-align:center;background:var(--surface2,#EAF1EA)">
+                <div style="font-size:26px;margin-bottom:6px">⬆</div>
+                <div style="font-size:13px;font-weight:700">Seret file CSV / Excel ke sini</div>
+                <div style="font-size:11.5px;color:var(--muted,#62736A);margin-top:3px">{{ uploadName }}</div>
+                <button onClick="{{ onPickFile }}" style="margin-top:12px;height:36px;padding:0 16px;border-radius:9px;border:1px solid var(--border,#dce6dd);background:var(--surface,#fff);font-weight:700;font-size:12.5px;cursor:pointer;color:var(--text,#16271E)">Pilih File</button>
+              </div>
+              <button onClick="{{ onImport }}" style="{{ importBtnStyle }}">{{ importLabel }}</button>
+              <sc-if value="{{ importing }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:14px">
+                  <sc-for list="{{ importSteps }}" as="s" hint-placeholder-count="4">
+                    <div style="display:flex;align-items:center;gap:9px;padding:6px 0">
+                      <span style="width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;{{ s.dot }}">{{ s.icon }}</span>
+                      <span style="font-size:12.5px;font-weight:600;color:{{ s.color }}">{{ s.label }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ importDone }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:14px;padding:13px 15px;border-radius:12px;background:rgba(40,152,101,.12);border:1px solid rgba(40,152,101,.3)">
+                  <div style="font-size:13px;font-weight:700;color:var(--green,#1B6744)">✓ Impor berhasil</div>
+                  <div style="font-size:12px;color:var(--muted,#62736A);margin-top:3px">Data tersimpan, ringkasan & rasio diperbarui. <strong style="color:var(--gold-dark,#7A631A)">{{ newRecCount }} rekomendasi baru</strong> dibuat via OpenRouter API.</div>
+                </div>
+              </sc-if>
+            </div>
+
+            <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:20px">
+              <h3 style="font-size:14.5px;font-weight:700;margin-bottom:14px">Riwayat Unggahan</h3>
+              <div style="display:flex;flex-direction:column">
+                <div style="display:grid;grid-template-columns:1fr 70px 86px;gap:8px;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted,#62736A);padding-bottom:9px;border-bottom:1px solid var(--border,#dce6dd)"><div>Daerah / Tahun</div><div style="text-align:center">Status</div><div style="text-align:right">Waktu</div></div>
+                <sc-for list="{{ uploadHistory }}" as="u" hint-placeholder-count="5">
+                  <div style="display:grid;grid-template-columns:1fr 70px 86px;gap:8px;align-items:center;padding:11px 0;border-bottom:1px solid var(--border,#dce6dd)">
+                    <div><div style="font-size:12.5px;font-weight:600">{{ u.region }}</div><div style="font-size:11px;color:var(--muted,#62736A)">TA {{ u.year }}</div></div>
+                    <div style="text-align:center"><span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;{{ u.statusPill }}">{{ u.status }}</span></div>
+                    <div style="text-align:right;font-size:11px;color:var(--muted,#62736A)">{{ u.time }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  </main>
+
+  <footer style="border-top:1px solid var(--border,#dce6dd);background:var(--surface,#fff)">
+    <div style="padding:18px 26px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center">
+      <div style="font-size:11.5px;color:var(--muted,#62736A)">Sumber: laporan APBD yang telah diaudit BPK · Data ilustratif (dummy) untuk pratinjau · Pemerintah Provinsi NTB</div>
+      <div style="font-size:11px;color:var(--muted,#62736A);font-weight:600">Dibuat dengan palet hijau-emas NTB</div>
+    </div>
+  </footer>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;defaultDark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;accentStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;emas&quot;,&quot;hijau&quot;],&quot;default&quot;:&quot;emas&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;homeLayout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;peta&quot;,&quot;grid&quot;],&quot;default&quot;:&quot;peta&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = {
+    view: 'beranda', year: 2024, dark: null, unit: 'miliar',
+    region: 'mataram', metric: 'pendapatan', homeLayout: null,
+    hover: null, compare: ['mataram','loteng','sumbawa'],
+    rekPri: 'semua', rekRegion: 'semua', laporanTab: 'LRA', lapMode: 'single', lapCompare: ['mataram','loteng','sumbawa'],
+    mapLevel: 'indonesia', mapHover: null, trendMetric: 'pendapatan',
+    authed: false, importing: false, importDone: false, uploadName: 'Belum ada file dipilih',
+  };
+
+  // ---------- theme ----------
+  componentDidMount(){
+    if(typeof window!=='undefined' && !window.NTB_MAP){
+      this._mapTimer=setInterval(()=>{ if(window.NTB_MAP){ clearInterval(this._mapTimer); this.forceUpdate(); } }, 120);
+    }
+  }
+  componentWillUnmount(){ if(this._mapTimer) clearInterval(this._mapTimer); }
+  getDark(){ return this.state.dark===null ? !!this.props.defaultDark : this.state.dark; }
+  getHomeLayout(){ return this.state.homeLayout===null ? (this.props.homeLayout || 'peta') : this.state.homeLayout; }
+  accentCol(){ return (this.props.accentStyle==='hijau') ? '#1B6744' : '#D4AF37'; }
+  themeVars(){
+    const a = this.accentCol();
+    if(this.getDark()){
+      return "--bg:#0D1611;--surface:#15231C;--surface2:#1B2C23;--border:#27392F;--text:#E9F1EB;--muted:#90A597;--green:#3FB47C;--green2:#5BC892;--greenSoft:#1F3A2C;--gold:#E5C254;--gold-dark:#D7B547;--goldSoft:#33301C;--headbg:rgba(13,22,17,.82);--mapsea:#0E1B24;--mapland:#243A2E;--accent:"+a+";";
+    }
+    return "--bg:#F1F5F0;--surface:#FFFFFF;--surface2:#EAF1EA;--border:#DCE6DD;--text:#16271E;--muted:#62736A;--green:#1B6744;--green2:#289865;--greenSoft:#B0D4BF;--gold:#D4AF37;--gold-dark:#7A631A;--goldSoft:#E9D69B;--headbg:rgba(241,245,240,.85);--mapsea:#DCE9F2;--mapland:#C2D6C6;--accent:"+a+";";
+  }
+
+  // ---------- data ----------
+  regionsList(){
+    return [
+      {id:'prov',name:'Provinsi NTB',short:'Prov. NTB',type:'province'},
+      {id:'mataram',name:'Kota Mataram',short:'KOMAT',type:'city',pos:{x:3,y:40,w:12,h:15}},
+      {id:'klu',name:'Kab. Lombok Utara',short:'KLU',type:'regency',pos:{x:15,y:9,w:18,h:24}},
+      {id:'lobar',name:'Kab. Lombok Barat',short:'LOBAR',type:'regency',pos:{x:15,y:35,w:13,h:25}},
+      {id:'loteng',name:'Kab. Lombok Tengah',short:'LOTENG',type:'regency',pos:{x:17,y:62,w:16,h:22}},
+      {id:'lotim',name:'Kab. Lombok Timur',short:'LOTIM',type:'regency',pos:{x:33,y:33,w:14,h:35}},
+      {id:'ksb',name:'Kab. Sumbawa Barat',short:'KSB',type:'regency',pos:{x:52,y:42,w:10,h:24}},
+      {id:'sumbawa',name:'Kab. Sumbawa',short:'SUMBAWA',type:'regency',pos:{x:62,y:21,w:18,h:39}},
+      {id:'dompu',name:'Kab. Dompu',short:'DOMPU',type:'regency',pos:{x:78,y:48,w:10,h:24}},
+      {id:'bima',name:'Kab. Bima',short:'KABI',type:'regency',pos:{x:83,y:25,w:13,h:31}},
+      {id:'kobi',name:'Kota Bima',short:'KOBI',type:'city',pos:{x:90,y:62,w:8,h:12}},
+    ];
+  }
+  regionById(id){ return this.regionsList().find(r=>r.id===id) || this.regionsList()[0]; }
+  base(){ return {prov:5800,mataram:1750,klu:1150,lobar:2050,loteng:2600,lotim:3100,ksb:1450,sumbawa:2200,dompu:1350,bima:2000,kobi:980}; }
+  hash(str){ let h=2166136261; for(let i=0;i<str.length;i++){h^=str.charCodeAt(i); h=Math.imul(h,16777619);} return (h>>>0)/4294967295; }
+
+  fin(rid,year){
+    const b=this.base()[rid]||1000;
+    const g=Math.pow(1.062,year-2021);
+    const plannedRev=Math.round(b*g*(0.96+this.hash(rid+year+'r')*0.09));
+    const serapan=0.80+this.hash(rid+year+'s')*0.185;
+    const realizedRev=Math.round(plannedRev*serapan);
+    const padShare = rid==='prov'?0.56 : rid==='mataram'?0.31 : rid==='kobi'?0.17 : 0.09+this.hash(rid+'p')*0.13;
+    const padPlanned=Math.round(plannedRev*padShare);
+    const padEff=0.83+this.hash(rid+year+'e')*0.26;
+    const padRealized=Math.round(padPlanned*padEff);
+    const transfer=plannedRev-padPlanned;
+    const transferReal=realizedRev-padRealized;
+    const plannedExp=Math.round(plannedRev*(1.0+(this.hash(rid+year+'x')-0.5)*0.07));
+    const expSer=0.79+this.hash(rid+year+'xs')*0.19;
+    const realizedExp=Math.round(plannedExp*expSer);
+    const financing=realizedExp-realizedRev;
+    let pegawai=0.33+this.hash(rid+'pg')*0.11;
+    let modal=0.13+this.hash(rid+year+'md')*0.13;
+    let barang=0.21+this.hash(rid+'br')*0.07;
+    let lain=Math.max(0.08,1-pegawai-modal-barang);
+    const sum=pegawai+modal+barang+lain; pegawai/=sum;modal/=sum;barang/=sum;lain/=sum;
+    return {plannedRev,realizedRev,serapan,padPlanned,padRealized,transfer,transferReal,plannedExp,realizedExp,expSer,financing,padEff,bd:{pegawai,barang,modal,lain}};
+  }
+  ratios(rid,year){
+    const f=this.fin(rid,year);
+    return {
+      ddf: f.padRealized/f.realizedRev*100,
+      rkk: f.padRealized/f.transferReal*100,
+      efektivitas: f.padRealized/f.padPlanned*100,
+      efisiensi: f.realizedExp/f.realizedRev*100,
+      bmodal: f.bd.modal*100,
+      ketergantungan: f.transfer/f.plannedRev*100,
+    };
+  }
+  ratioCfg(){ return {
+    ddf:{dir:1,mid:25,good:40,label:'Derajat Desentralisasi Fiskal',desc:'PAD / Total Pendapatan'},
+    rkk:{dir:1,mid:50,good:75,label:'Rasio Kemandirian',desc:'PAD / Dana Transfer'},
+    efektivitas:{dir:1,mid:90,good:100,label:'Efektivitas PAD',desc:'Realisasi / Target PAD'},
+    efisiensi:{dir:-1,mid:100,good:90,label:'Efisiensi Belanja',desc:'Belanja / Pendapatan'},
+    bmodal:{dir:1,mid:15,good:25,label:'Belanja Modal / Total',desc:'Porsi belanja modal'},
+    ketergantungan:{dir:-1,mid:70,good:50,label:'Ketergantungan',desc:'Transfer / Pendapatan'},
+  };}
+  statusFor(key,val){
+    const c=this.ratioCfg()[key]; let label;
+    if(c.dir>0) label = val>=c.good?'Baik':val>=c.mid?'Cukup':'Perlu Perhatian';
+    else label = val<=c.good?'Baik':val<=c.mid?'Cukup':'Perlu Perhatian';
+    const tone = label==='Baik'?'good':label==='Cukup'?'mid':'bad';
+    return {label,tone};
+  }
+  tonePill(tone){
+    if(tone==='good') return 'background:rgba(40,152,101,.15);color:var(--green2,#289865)';
+    if(tone==='mid') return 'background:rgba(212,175,55,.18);color:var(--gold-dark,#7A631A)';
+    return 'background:rgba(194,75,51,.15);color:#C24B33';
+  }
+  toneColor(tone){ return tone==='good'?'var(--green2,#289865)':tone==='mid'?'var(--gold-dark,#7A631A)':'#C24B33'; }
+
+  recsFor(rid,year){
+    const f=this.fin(rid,year), r=this.ratios(rid,year), name=this.regionById(rid).name, out=[];
+    const p=(x)=>this.fmtPct(x);
+    if(f.serapan<0.865) out.push({title:'Serapan belanja rendah pada akhir tahun',reason:'Serapan anggaran hanya '+p(f.serapan*100)+' hingga akhir tahun anggaran — indikasi keterlambatan kontrak atau proses pengadaan. Perlu ditelusuri pada belanja modal.',priority:'Tinggi',ref:'serapan',refLabel:'Lihat peta serapan'});
+    if(f.expSer>0.975) out.push({title:'Lonjakan realisasi belanja triwulan IV',reason:'Realisasi belanja mencapai '+p(f.expSer*100)+' namun terkonsentrasi di akhir tahun. Periksa kualitas pertanggungjawaban dan kewajaran penyerapan.',priority:'Tinggi',ref:'detail',refLabel:'Buka detail daerah'});
+    if(r.efektivitas<92) out.push({title:'Target PAD tidak tercapai',reason:'Efektivitas PAD '+p(r.efektivitas)+' di bawah ambang batas. Potensi over-estimasi target atau kebocoran penerimaan asli daerah.',priority:'Sedang',ref:'rasio',refLabel:'Lihat rasio kinerja'});
+    if(r.ketergantungan>68) out.push({title:'Ketergantungan dana transfer tinggi',reason:p(r.ketergantungan)+' pendapatan berasal dari dana transfer pusat. Kemandirian fiskal lemah — telaah strategi optimalisasi PAD.',priority:'Sedang',ref:'rasio',refLabel:'Lihat rasio kinerja'});
+    if(f.bd.modal<0.16) out.push({title:'Porsi belanja modal relatif kecil',reason:'Belanja modal hanya '+p(f.bd.modal*100)+' dari total belanja. Periksa prioritas pembangunan dan komposisi belanja pegawai.',priority:'Rendah',ref:'detail',refLabel:'Lihat komposisi belanja'});
+    if(out.length<2) out.push({title:'Profil keuangan dalam batas wajar',reason:'Tidak ditemukan anomali signifikan pada tahun anggaran ini. Tetap pantau realisasi triwulanan sebagai kontrol rutin.',priority:'Rendah',ref:'detail',refLabel:'Buka detail daerah'});
+    return out.map((o,i)=>({...o,id:rid+year+i,region:name,rid}));
+  }
+
+  // ---------- format ----------
+  fmt(v){
+    if(this.state.unit==='triliun') return 'Rp '+(v/1000).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})+' T';
+    return 'Rp '+Math.round(v).toLocaleString('id-ID')+' M';
+  }
+  fmtShort(v){
+    if(this.state.unit==='triliun') return (v/1000).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})+'T';
+    return Math.round(v).toLocaleString('id-ID');
+  }
+  fmtPct(x){ return x.toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1})+'%'; }
+
+  // ---------- chart builders ----------
+  buildLine(vals,W,H){
+    const pl=44,pr=10,pt=26,pb=34;
+    const min=Math.min(...vals)*0.92, max=Math.max(...vals)*1.04, rng=(max-min)||1;
+    const n=vals.length;
+    const pts=vals.map((v,i)=>{
+      const x=pl+(W-pl-pr)*(n===1?0.5:i/(n-1));
+      const y=pt+(H-pt-pb)*(1-(v-min)/rng);
+      return {x:+x.toFixed(1),y:+y.toFixed(1),v};
+    });
+    const poly=pts.map(p=>p.x+','+p.y).join(' ');
+    const area='M'+pts[0].x+','+pts[0].y+' '+pts.map(p=>'L'+p.x+','+p.y).join(' ')+' L'+pts[n-1].x+','+(H-pb)+' L'+pts[0].x+','+(H-pb)+' Z';
+    return {pts,poly,area,top:pt,bot:H-pb};
+  }
+
+  // ---------- actions ----------
+  exportCSV(){
+    const year=this.state.year, regs=this.regionsList();
+    let csv='Daerah,Pendapatan Realisasi,Belanja Realisasi,Serapan %,DDF,Kemandirian,Efektivitas PAD,Ketergantungan\n';
+    regs.forEach(r=>{ const f=this.fin(r.id,year),rt=this.ratios(r.id,year);
+      csv+=[r.name,Math.round(f.realizedRev),Math.round(f.realizedExp),(f.serapan*100).toFixed(1),rt.ddf.toFixed(1),rt.rkk.toFixed(1),rt.efektivitas.toFixed(1),rt.ketergantungan.toFixed(1)].join(',')+'\n';
+    });
+    try{
+      const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='apbd-ntb-'+year+'.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+    }catch(e){}
+  }
+  runImport(){
+    if(this.state.importing) return;
+    this.setState({importing:true,importDone:false});
+    setTimeout(()=>this.setState({importing:false,importDone:true}), 2600);
+  }
+
+  navStyle(active){
+    const base='width:100%;height:42px;padding:0 14px;border:0;border-radius:10px;font-weight:700;font-size:13.5px;cursor:pointer;white-space:nowrap;font-family:inherit;display:flex;align-items:center;gap:11px;text-align:left;';
+    if(active) return base+'background:var(--green,#1B6744);color:#fff;box-shadow:0 6px 14px -6px rgba(27,103,68,.6)';
+    return base+'background:transparent;color:var(--muted,#62736A)';
+  }
+  pillTab(active){
+    const base='height:32px;padding:0 13px;border:0;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;';
+    if(active) return base+'background:var(--surface2,#EAF1EA);color:var(--text,#16271E);box-shadow:inset 0 0 0 1px var(--border,#dce6dd)';
+    return base+'background:transparent;color:var(--muted,#62736A)';
+  }
+  segTab(active){
+    const base='height:30px;padding:0 12px;border:0;border-radius:8px;font-weight:700;font-size:11.5px;cursor:pointer;font-family:inherit;';
+    return active ? base+'background:var(--green,#1B6744);color:#fff' : base+'background:transparent;color:var(--muted,#62736A)';
+  }
+
+  // ===== Laporan Keuangan (data audit Kab. Bima TA 2025, dalam miliar) =====
+  lapTabsDef(){ return [
+    {id:'LRA',label:'LRA',full:'Laporan Realisasi Anggaran'},
+    {id:'LPSAL',label:'LPSAL',full:'Laporan Perubahan SAL'},
+    {id:'Neraca',label:'Neraca',full:'Neraca'},
+    {id:'LO',label:'LO',full:'Laporan Operasional'},
+    {id:'LAK',label:'LAK',full:'Laporan Arus Kas'},
+    {id:'LPE',label:'LPE',full:'Laporan Perubahan Ekuitas'},
+  ]; }
+  rawBima(){
+    return {
+      LRA:{ cols:['Anggaran','Realisasi','%','2024'], pctCol:2, rows:[
+        {l:'PENDAPATAN DAERAH',lv:0,k:'t',v:[2081.415,2060.940,null,2090.725]},
+        {l:'Pendapatan Asli Daerah (PAD)',lv:1,k:'s',v:[220.092,209.559,null,169.926]},
+        {l:'Pajak Daerah',lv:2,k:'i',v:[42.086,35.786,null,16.684]},
+        {l:'Retribusi Daerah',lv:2,k:'i',v:[155.007,156.437,null,17.699]},
+        {l:'Hasil Pengelolaan Kekayaan Daerah Dipisahkan',lv:2,k:'i',v:[7.510,8.443,null,8.152]},
+        {l:'Lain-lain PAD yang Sah',lv:2,k:'i',v:[15.490,8.892,null,127.390]},
+        {l:'Pendapatan Transfer',lv:1,k:'s',v:[1834.998,1825.057,null,1832.006]},
+        {l:'Transfer Pemerintah Pusat',lv:2,k:'i',v:[1588.999,1606.622,null,1559.908]},
+        {l:'Dana Bagi Hasil (DBH)',lv:2,k:'i',v:[103.870,102.289,null,71.420]},
+        {l:'Dana Alokasi Umum (DAU)',lv:2,k:'i',v:[1130.073,1160.438,null,1069.469]},
+        {l:'Dana Alokasi Khusus (DAK)',lv:2,k:'i',v:[355.055,343.896,null,419.019]},
+        {l:'Dana Desa',lv:2,k:'i',v:[180.596,154.098,null,187.145]},
+        {l:'Transfer Antar Daerah',lv:2,k:'i',v:[65.403,64.336,null,78.122]},
+        {l:'Lain-lain Pendapatan Daerah yang Sah',lv:1,k:'s',v:[26.325,26.325,null,88.793]},
+        {l:'BELANJA DAERAH',lv:0,k:'t',v:[2120.341,2032.254,null,2079.877]},
+        {l:'Belanja Operasi',lv:1,k:'s',v:[1620.643,1579.147,null,1567.972]},
+        {l:'Belanja Pegawai',lv:2,k:'i',v:[1083.594,1059.734,null,959.315]},
+        {l:'Belanja Barang dan Jasa',lv:2,k:'i',v:[505.099,488.797,null,543.166]},
+        {l:'Belanja Hibah',lv:2,k:'i',v:[31.499,30.165,null,65.180]},
+        {l:'Belanja Bantuan Sosial',lv:2,k:'i',v:[0.451,0.451,null,0.311]},
+        {l:'Belanja Modal',lv:1,k:'s',v:[181.581,163.127,null,212.988]},
+        {l:'Belanja Modal Tanah',lv:2,k:'i',v:[0.277,0.274,null,0.241]},
+        {l:'Belanja Modal Peralatan dan Mesin',lv:2,k:'i',v:[39.526,36.383,null,45.627]},
+        {l:'Belanja Modal Gedung dan Bangunan',lv:2,k:'i',v:[80.385,70.165,null,111.618]},
+        {l:'Belanja Modal Jalan, Jaringan, dan Irigasi',lv:2,k:'i',v:[53.731,48.712,null,52.779]},
+        {l:'Belanja Modal Aset Tetap Lainnya',lv:2,k:'i',v:[7.662,7.593,null,2.667]},
+        {l:'Belanja Tidak Terduga',lv:1,k:'s',v:[4.500,3.938,null,1.622]},
+        {l:'Belanja Transfer',lv:1,k:'s',v:[313.617,286.042,null,297.295]},
+        {l:'SURPLUS / (DEFISIT)',lv:0,k:'t',v:[-38.926,28.686,'–',10.848]},
+        {l:'PEMBIAYAAN DAERAH (NETTO)',lv:0,k:'t',v:[38.926,39.730,null,29.078]},
+        {l:'Penerimaan Pembiayaan',lv:1,k:'s',v:[39.926,39.930,null,30.078]},
+        {l:'Pengeluaran Pembiayaan',lv:1,k:'s',v:[1.000,0.200,null,1.000]},
+        {l:'SISA LEBIH PEMBIAYAAN ANGGARAN (SiLPA)',lv:0,k:'t',v:[0,68.416,'–',39.926]},
+      ]},
+      LPSAL:{ cols:['2025','2024'], rows:[
+        {l:'Saldo Anggaran Lebih Awal',lv:0,k:'s',v:[39.926,29.629]},
+        {l:'Penggunaan SAL sebagai Penerimaan Pembiayaan',lv:1,k:'i',v:[-39.926,-30.071]},
+        {l:'Sisa Lebih/Kurang Pembiayaan Anggaran',lv:0,k:'s',v:[68.416,39.926]},
+        {l:'Koreksi Kesalahan Pembukuan Tahun Sebelumnya',lv:1,k:'i',v:[-0.0002,0.443]},
+        {l:'SALDO ANGGARAN LEBIH AKHIR',lv:0,k:'t',v:[68.416,39.926]},
+      ]},
+      Neraca:{ cols:['2025','2024'], rows:[
+        {l:'ASET',lv:0,k:'t',v:[null,null]},
+        {l:'Aset Lancar',lv:1,k:'s',v:[180.757,97.266]},
+        {l:'Kas dan Setara Kas',lv:2,k:'i',v:[68.604,40.009]},
+        {l:'Piutang Pajak Daerah',lv:2,k:'i',v:[24.523,22.490]},
+        {l:'Piutang Retribusi Daerah',lv:2,k:'i',v:[14.529,9.466]},
+        {l:'Piutang Transfer',lv:2,k:'i',v:[76.838,9.453]},
+        {l:'Penyisihan Piutang',lv:2,k:'i',v:[-31.276,-26.846]},
+        {l:'Persediaan',lv:2,k:'i',v:[21.473,23.820]},
+        {l:'Investasi Jangka Panjang',lv:1,k:'s',v:[78.515,84.629]},
+        {l:'Aset Tetap',lv:1,k:'s',v:[2649.641,2678.998]},
+        {l:'Tanah',lv:2,k:'i',v:[498.033,478.772]},
+        {l:'Peralatan dan Mesin',lv:2,k:'i',v:[760.441,735.190]},
+        {l:'Gedung dan Bangunan',lv:2,k:'i',v:[1676.434,1603.368]},
+        {l:'Jalan, Jaringan, dan Irigasi',lv:2,k:'i',v:[1774.592,1709.235]},
+        {l:'Akumulasi Penyusutan',lv:2,k:'i',v:[-2164.615,-1948.539]},
+        {l:'Properti Investasi',lv:1,k:'s',v:[80.166,81.303]},
+        {l:'Aset Lainnya',lv:1,k:'s',v:[42.404,45.011]},
+        {l:'JUMLAH ASET',lv:0,k:'t',v:[3031.484,2987.207]},
+        {l:'KEWAJIBAN',lv:0,k:'t',v:[null,null]},
+        {l:'Kewajiban Jangka Pendek',lv:1,k:'s',v:[29.850,31.133]},
+        {l:'Pendapatan Diterima Dimuka',lv:2,k:'i',v:[8.940,7.283]},
+        {l:'Utang Belanja',lv:2,k:'i',v:[17.881,20.714]},
+        {l:'Utang Jangka Pendek Lainnya',lv:2,k:'i',v:[2.840,2.840]},
+        {l:'Kewajiban Jangka Panjang',lv:1,k:'s',v:[0,0]},
+        {l:'JUMLAH KEWAJIBAN',lv:0,k:'t',v:[29.850,31.133]},
+        {l:'EKUITAS',lv:0,k:'t',v:[3001.634,2956.075]},
+        {l:'JUMLAH KEWAJIBAN DAN EKUITAS',lv:0,k:'t',v:[3031.484,2987.207]},
+      ]},
+      LO:{ cols:['2025','2024','Naik/(Turun)','%'], growthCol:true, rows:[
+        {l:'PENDAPATAN - LO',lv:0,k:'t',v:[1993.958,1836.549]},
+        {l:'Pendapatan Asli Daerah - LO',lv:1,k:'s',v:[207.720,163.262]},
+        {l:'Pendapatan Transfer - LO',lv:1,k:'s',v:[1730.928,1624.324]},
+        {l:'Lain-lain Pendapatan Daerah yang Sah - LO',lv:1,k:'s',v:[55.309,48.963]},
+        {l:'BEBAN - LO',lv:0,k:'t',v:[1950.529,1936.010]},
+        {l:'Beban Operasi',lv:1,k:'s',v:[1818.584,1825.860]},
+        {l:'Beban Pegawai',lv:2,k:'i',v:[1062.582,955.958]},
+        {l:'Beban Barang dan Jasa',lv:2,k:'i',v:[494.256,598.861]},
+        {l:'Beban Hibah',lv:2,k:'i',v:[34.845,63.197]},
+        {l:'Beban Penyusutan dan Amortisasi',lv:2,k:'i',v:[220.782,200.893]},
+        {l:'Beban Transfer',lv:1,k:'s',v:[131.944,110.150]},
+        {l:'SURPLUS / (DEFISIT) KEGIATAN OPERASIONAL',lv:0,k:'t',v:[43.429,-99.461]},
+        {l:'SURPLUS / (DEFISIT) - LO',lv:0,k:'t',v:[41.875,-102.088]},
+      ]},
+      LAK:{ cols:['2025','2024'], rows:[
+        {l:'Arus Kas dari Aktivitas Operasi',lv:0,k:'t',v:[190.708,223.820]},
+        {l:'Arus Kas dari Aktivitas Investasi',lv:0,k:'t',v:[-162.222,-213.971]},
+        {l:'Arus Kas dari Aktivitas Pendanaan',lv:0,k:'t',v:[0.003,0.007]},
+        {l:'Arus Kas dari Aktivitas Transitoris',lv:0,k:'t',v:[0.182,-0.096]},
+        {l:'Kenaikan / (Penurunan) Kas',lv:0,k:'t',v:[28.671,9.760]},
+        {l:'Saldo Awal Kas',lv:1,k:'i',v:[39.933,30.249]},
+        {l:'SALDO AKHIR KAS',lv:0,k:'t',v:[68.604,40.009]},
+      ]},
+      LPE:{ cols:['2025','2024'], rows:[
+        {l:'Ekuitas Awal',lv:0,k:'t',v:[2956.075,3046.908]},
+        {l:'Surplus / (Defisit) - LO',lv:1,k:'i',v:[41.875,-102.088]},
+        {l:'Dampak Kumulatif Perubahan Kebijakan / Koreksi',lv:1,k:'i',v:[3.685,11.255]},
+        {l:'EKUITAS AKHIR',lv:0,k:'t',v:[3001.634,2956.075]},
+      ]},
+    };
+  }
+  lapFactor(rid,year){ return (this.base()[rid]/2000) * Math.pow(1.062, year-2025); }
+  fmtAmt(v){ if(v===null||v===undefined) return ''; if(v<0) return '('+this.fmt(-v)+')'; return this.fmt(v); }
+  // ratios computed from the audited statements (struktur identik antar daerah; nominal mengikuti skala daerah)
+  // per-region drivers: income side reuses fin() (cocok dgn tab Rasio Kinerja); neraca/LO dari anchor Bima + variasi deterministik
+  lapDrivers(rid,year){
+    if(rid==='bima' && year===2025) return {PAD:209.559,Transfer:1825.057,TotalPend:2060.940,PADtarget:220.092,
+      TotalBelanja:2032.254,BelModal:163.127,BelPegawai:1059.734,
+      Kas:68.604,AsetLancar:180.757,Persediaan:21.473,KwjJP:29.850,TotalAset:3031.484,TotalKwj:29.850,Ekuitas:3001.634,
+      PendLO:1993.958,BebanLO:1950.529,PendLOprev:1836.549,EkuitasAwal:2956.075};
+    const f=this.fin(rid,year), h=(k)=>this.hash(rid+year+k);
+    const PAD=f.padRealized, PADtarget=f.padPlanned, Transfer=f.transferReal, TotalPend=f.realizedRev;
+    const TotalBelanja=f.realizedExp, BelModal=f.realizedExp*f.bd.modal, BelPegawai=f.realizedExp*f.bd.pegawai;
+    const TotalAset=TotalPend*(1.2+h('am')*0.75);
+    const kwjRatio=0.006+h('kw')*0.05;
+    const TotalKwj=TotalAset*kwjRatio, KwjJP=TotalKwj*(0.9+h('jp')*0.1), Ekuitas=TotalAset-TotalKwj;
+    const AsetLancar=KwjJP*(1.7+h('cr')*7.5), Persediaan=AsetLancar*(0.06+h('ps')*0.16), Kas=KwjJP*(0.4+h('ks')*3.4);
+    const PendLO=TotalPend*(0.93+h('plo')*0.07), BebanLO=PendLO*(0.92+h('opr')*0.13);
+    const fprev=this.fin(rid,Math.max(2021,year-1)), PendLOprev=fprev.realizedRev*(0.93+this.hash(rid+(year-1)+'plo')*0.07);
+    const EkuitasAwal=Ekuitas/(1.0+(h('eg')*0.055-0.005));
+    return {PAD,PADtarget,Transfer,TotalPend,TotalBelanja,BelModal,BelPegawai,Kas,AsetLancar,Persediaan,KwjJP,TotalAset,TotalKwj,Ekuitas,PendLO,BebanLO,PendLOprev,EkuitasAwal};
+  }
+  statusByDir(val,dir,cukup,baik){ let lab; if(dir>0) lab=val>=baik?'Baik':val>=cukup?'Cukup':'Perlu Perhatian'; else lab=val<=baik?'Baik':val<=cukup?'Cukup':'Perlu Perhatian'; return {label:lab,tone:lab==='Baik'?'good':lab==='Cukup'?'mid':'bad'}; }
+  lapRatioDefs(){ return [
+    {key:'lancar',cat:'Likuiditas',name:'Rasio Lancar',formula:'Aset Lancar ÷ Kewajiban JP',unit:'x',dir:1,cukup:1,baik:2,note:'Aset lancar memadai menutup kewajiban jangka pendek.',calc:D=>D.AsetLancar/D.KwjJP},
+    {key:'kas',cat:'Likuiditas',name:'Rasio Kas',formula:'Kas ÷ Kewajiban JP',unit:'x',dir:1,cukup:0.5,baik:1,note:'Ketersediaan kas untuk kewajiban segera.',calc:D=>D.Kas/D.KwjJP},
+    {key:'cepat',cat:'Likuiditas',name:'Rasio Cepat',formula:'(Aset Lancar − Persediaan) ÷ Kewajiban JP',unit:'x',dir:1,cukup:1,baik:1.5,note:'Likuiditas tanpa mengandalkan persediaan.',calc:D=>(D.AsetLancar-D.Persediaan)/D.KwjJP},
+    {key:'solv',cat:'Solvabilitas',name:'Rasio Solvabilitas',formula:'Total Aset ÷ Total Kewajiban',unit:'x',dir:1,cukup:1.5,baik:2,note:'Kemampuan aset menutup seluruh kewajiban.',calc:D=>D.TotalAset/D.TotalKwj},
+    {key:'der',cat:'Solvabilitas',name:'Kewajiban thd Ekuitas',formula:'Total Kewajiban ÷ Ekuitas',unit:'%',dir:-1,cukup:100,baik:50,note:'Tingkat leverage terhadap ekuitas.',calc:D=>D.TotalKwj/D.Ekuitas*100},
+    {key:'kwjaset',cat:'Solvabilitas',name:'Kewajiban thd Aset',formula:'Total Kewajiban ÷ Total Aset',unit:'%',dir:-1,cukup:50,baik:30,note:'Porsi aset yang dibiayai utang.',calc:D=>D.TotalKwj/D.TotalAset*100},
+    {key:'ddf',cat:'Kemandirian Fiskal',name:'Derajat Desentralisasi Fiskal',formula:'PAD ÷ Total Pendapatan',unit:'%',dir:1,cukup:25,baik:40,note:'Kontribusi PAD terhadap pendapatan.',calc:D=>D.PAD/D.TotalPend*100},
+    {key:'mandiri',cat:'Kemandirian Fiskal',name:'Rasio Kemandirian',formula:'PAD ÷ Pendapatan Transfer',unit:'%',dir:1,cukup:50,baik:75,note:'Kemandirian terhadap dana transfer.',calc:D=>D.PAD/D.Transfer*100},
+    {key:'tergantung',cat:'Kemandirian Fiskal',name:'Rasio Ketergantungan',formula:'Transfer ÷ Total Pendapatan',unit:'%',dir:-1,cukup:70,baik:50,note:'Ketergantungan pada dana transfer.',calc:D=>D.Transfer/D.TotalPend*100},
+    {key:'efekpad',cat:'Efisiensi & Belanja',name:'Efektivitas PAD',formula:'Realisasi ÷ Target PAD',unit:'%',dir:1,cukup:90,baik:100,note:'Capaian realisasi terhadap target PAD.',calc:D=>D.PAD/D.PADtarget*100},
+    {key:'efisiensi',cat:'Efisiensi & Belanja',name:'Efisiensi Belanja',formula:'Belanja ÷ Pendapatan',unit:'%',dir:-1,cukup:100,baik:90,note:'Belanja relatif terhadap pendapatan.',calc:D=>D.TotalBelanja/D.TotalPend*100},
+    {key:'belmodal',cat:'Efisiensi & Belanja',name:'Rasio Belanja Modal',formula:'Belanja Modal ÷ Total Belanja',unit:'%',dir:1,cukup:15,baik:25,note:'Porsi belanja modal/pembangunan.',calc:D=>D.BelModal/D.TotalBelanja*100},
+    {key:'belpeg',cat:'Efisiensi & Belanja',name:'Rasio Belanja Pegawai',formula:'Belanja Pegawai ÷ Total Belanja',unit:'%',dir:-1,cukup:50,baik:40,note:'Beban belanja pegawai terhadap total.',calc:D=>D.BelPegawai/D.TotalBelanja*100},
+    {key:'operasi',cat:'Kinerja Operasional (LO)',name:'Rasio Operasi',formula:'Beban-LO ÷ Pendapatan-LO',unit:'%',dir:-1,cukup:100,baik:95,note:'Efisiensi operasional (surplus/defisit-LO).',calc:D=>D.BebanLO/D.PendLO*100},
+    {key:'tumbuhpend',cat:'Kinerja Operasional (LO)',name:'Pertumbuhan Pendapatan-LO',formula:'Δ Pendapatan-LO thd th lalu',unit:'%',dir:1,cukup:0,baik:5,note:'Tren pertumbuhan pendapatan operasional.',calc:D=>(D.PendLO-D.PendLOprev)/D.PendLOprev*100},
+    {key:'tumbuhek',cat:'Kinerja Operasional (LO)',name:'Pertumbuhan Ekuitas',formula:'Δ Ekuitas thd awal tahun',unit:'%',dir:1,cukup:0,baik:3,note:'Perubahan kekayaan bersih daerah.',calc:D=>(D.Ekuitas-D.EkuitasAwal)/D.EkuitasAwal*100},
+  ]; }
+  fmtRatio(v,unit){ return unit==='x' ? v.toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})+'×' : this.fmtPct(v); }
+  lapRatios(rid,year){
+    const D=this.lapDrivers(rid,year), cats=[], byCat={};
+    this.lapRatioDefs().forEach(d=>{
+      const v=d.calc(D), st=this.statusByDir(v,d.dir,d.cukup,d.baik);
+      if(!byCat[d.cat]){ byCat[d.cat]={name:d.cat,items:[]}; cats.push(byCat[d.cat]); }
+      byCat[d.cat].items.push({label:d.name,val:this.fmtRatio(v,d.unit),formula:d.formula,note:d.note,st,raw:v,key:d.key});
+    });
+    return cats;
+  }
+
+  renderVals(){
+    const S=this.state, year=S.year, dark=this.getDark(), layout=this.getHomeLayout();
+    const regions=this.regionsList(), kab=regions.filter(r=>r.id!=='prov');
+    const set=(o)=>this.setState(o);
+
+    const views=[{id:'beranda',label:'Beranda'},{id:'detail',label:'Detail Daerah'},{id:'laporan',label:'Laporan Keuangan'},{id:'rasio',label:'Rasio Keuangan'},{id:'rekomendasi',label:'Rekomendasi'},{id:'admin',label:'Admin'}];
+    const navItems=views.map(v=>{const on=S.view===v.id;return {label:v.label,btnStyle:this.navStyle(on),dot:on?'rgba(255,255,255,.85)':'var(--border,#dce6dd)',onClick:()=>set({view:v.id})};});
+    const crumbMap={beranda:'Ringkasan Provinsi',detail:'Detail Daerah',laporan:'Laporan Keuangan',rasio:'Analisis Rasio Kinerja',rekomendasi:'Rekomendasi Pemeriksaan',admin:'Panel Admin'};
+
+    const out={
+      themeVars:this.themeVars(), pageBg: dark?'#0D1611':'#F1F5F0', rankColor: dark?'#fff':'#000',
+      navItems, yearStr:String(year), pageCrumb:crumbMap[S.view]||'',
+      years:[2021,2022,2023,2024,2025].map(y=>({v:String(y),label:'TA '+y})),
+      onYear:(e)=>set({year:+e.target.value}),
+      onUnit:()=>set({unit:S.unit==='miliar'?'triliun':'miliar'}),
+      unitLabel:S.unit==='miliar'?'Miliar':'Triliun',
+      onDark:()=>set({dark:!dark}), darkIcon:dark?'☀':'☾',
+      onExport:()=>this.exportCSV(),
+      isBeranda:S.view==='beranda', isDetail:S.view==='detail', isLaporan:S.view==='laporan', isRasio:S.view==='rasio', isRek:S.view==='rekomendasi', isAdmin:S.view==='admin',
+    };
+
+    // ===== LAPORAN KEUANGAN =====
+    {
+      const lapReg=this.regionById(S.region);
+      out.lapRegionName=lapReg.name;
+      out.lapTabs=this.lapTabsDef().map(t=>({label:t.label,full:t.full,onClick:()=>set({laporanTab:t.id}),style:this.segTab(S.laporanTab===t.id)}));
+      const tab=S.laporanTab||'LRA';
+      const def=this.lapTabsDef().find(t=>t.id===tab)||this.lapTabsDef()[0];
+      const stmt=this.rawBima()[tab];
+      const f=this.lapFactor(S.region,year);
+      out.lapStmtTitle=def.full;
+      out.lapStmtSub='Untuk periode yang berakhir 31 Desember '+year+' · (dalam '+(S.unit==='triliun'?'triliun':'miliar')+' rupiah)';
+      const isBima=S.region==='bima';
+      out.lapBadge=isBima?('Sumber: Laporan Audit BPK · TA '+year):('Ilustratif · diskalakan dari laporan Kab. Bima');
+      out.lapBadgeStyle=isBima?'background:rgba(40,152,101,.15);color:var(--green2,#289865)':'background:rgba(212,175,55,.18);color:var(--gold-dark,#7A631A)';
+      // columns
+      out.lapCols=stmt.cols.map((c,i)=>({name:c}));
+      out.lapGrid='minmax(0,1fr) '+stmt.cols.map(()=>'minmax(78px,118px)').join(' ');
+      // rows
+      out.lapRows=stmt.rows.map(row=>{
+        const bold=row.k==='t', sub=row.k==='s';
+        const cells=row.cols||stmt.cols.map((c,ci)=>{
+          if(stmt.pctCol===ci){ // percent column for LRA
+            const a=row.v[0], r=row.v[1]; let txt;
+            if(typeof row.v[2]==='string') txt=row.v[2];
+            else if(a&&a!==0) txt=this.fmtPct(r/a*100); else txt='–';
+            return {t:txt,color:'var(--muted,#62736A)',w:'600'};
+          }
+          if(stmt.growthCol){
+            // cols: 0=2025,1=2024,2=change,3=%
+            if(ci===2){ const ch=row.v[0]-row.v[1]; return {t:this.fmtAmt(ch*f),color:ch<0?'#C24B33':'inherit',w:'600'}; }
+            if(ci===3){ const ch=row.v[0]-row.v[1]; const p=row.v[1]!==0?ch/Math.abs(row.v[1])*100:null; return {t:p===null?'–':this.fmtPct(p),color:p<0?'#C24B33':'var(--muted,#62736A)',w:'600'}; }
+            const val=row.v[ci]; return {t:val===null?'':this.fmtAmt(val*f),color:val<0?'#C24B33':'inherit',w:bold?'800':'600'};
+          }
+          const val=row.v[ci]; return {t:val===null?'':this.fmtAmt(val*f),color:val<0?'#C24B33':'inherit',w:bold?'800':'600'};
+        });
+        return {label:row.l, pad:(row.lv*15)+'px', weight:bold?'800':sub?'700':'500',
+          bg:bold?'var(--surface2,#EAF1EA)':'transparent',
+          color:bold?'var(--text,#16271E)':sub?'var(--text,#16271E)':'var(--muted,#62736A)',
+          cells};
+      });
+      out.lapRatioCats=this.lapRatios(S.region,year).map(cat=>({name:cat.name, items:cat.items.map(it=>({label:it.label,val:it.val,formula:it.formula,note:it.note,statusLabel:it.st.label,pill:this.tonePill(it.st.tone),bar:this.toneColor(it.st.tone)}))}));
+
+      // mode toggle: per-daerah vs perbandingan
+      const lapMode=S.lapMode||'single';
+      out.lapSingle=lapMode==='single'; out.lapCompareOn=lapMode==='compare';
+      out.lapModePerStyle=this.pillTab(lapMode==='single'); out.lapModeCmpStyle=this.pillTab(lapMode==='compare');
+      out.onLapModePer=()=>set({lapMode:'single'}); out.onLapModeCmp=()=>set({lapMode:'compare'});
+
+      // comparison
+      const lc=S.lapCompare;
+      out.lapChips=kab.map(r=>{const on=lc.includes(r.id);
+        const style='height:32px;padding:0 13px;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;border:1px solid '+(on?'var(--green,#1B6744)':'var(--border,#dce6dd)')+';background:'+(on?'var(--green,#1B6744)':'var(--surface,#fff)')+';color:'+(on?'#fff':'var(--muted,#62736A)');
+        return {name:r.short,style,onClick:()=>{ let nc; if(on) nc=lc.filter(x=>x!==r.id); else if(lc.length>=4) nc=lc; else nc=[...lc,r.id]; if(nc.length===0) nc=[r.id]; set({lapCompare:nc}); }};
+      });
+      const palette=['#1B6744','#D4AF37','#289865','#7A631A'];
+      const cmpRegs=lc.map((id,i)=>({id,name:this.regionById(id).name,short:this.regionById(id).short,color:palette[i%palette.length]}));
+      out.lapCmpRegions=cmpRegs.map(c=>({name:c.short,color:c.color}));
+      out.lapCmpGrid='minmax(0,1.7fr) '+lc.map(()=>'minmax(70px,1fr)').join(' ');
+      // bandingkan laporan keuangan (statement terpilih) berdampingan antar daerah
+      const cstmt=this.rawBima()[tab];
+      const valIdx = tab==='LRA' ? 1 : 0; // LRA: kolom Realisasi; lainnya: tahun berjalan
+      out.lapCmpBasis = (tab==='LRA'?'Nilai pembanding: Realisasi TA ':'Nilai pembanding: TA ')+year+' · (dalam '+(S.unit==='triliun'?'triliun':'miliar')+' rupiah)';
+      out.lapCmpRows=cstmt.rows.map(row=>{
+        const bold=row.k==='t', sub=row.k==='s';
+        const cells=lc.map(id=>{ const fr=this.lapFactor(id,year); const v=row.v[valIdx];
+          return {t:(v===null||v===undefined)?'':this.fmtAmt(v*fr), color:(v<0)?'#C24B33':'inherit', w:bold?'800':'600'}; });
+        return {label:row.l, pad:(row.lv*14)+'px', weight:bold?'800':sub?'700':'500',
+          bg:bold?'var(--surface2,#EAF1EA)':'transparent',
+          color:bold?'var(--text,#16271E)':sub?'var(--text,#16271E)':'var(--muted,#62736A)', cells};
+      });
+    }
+
+    // ===== BERANDA =====
+    const pf=this.fin('prov',year), prevY=Math.max(2021,year-1), pfp=this.fin('prov',prevY);
+    const dRev=year>2021?(pf.realizedRev/pfp.realizedRev-1)*100:0;
+    const dExp=year>2021?(pf.realizedExp/pfp.realizedExp-1)*100:0;
+    const arr=(x)=>(x>=0?'▲ ':'▼ ')+Math.abs(x).toFixed(1)+'%';
+    const dbg=(x)=>x>=0?'rgba(40,152,101,.15)':'rgba(194,75,51,.15)';
+    const dfg=(x)=>x>=0?'var(--green2,#289865)':'#C24B33';
+    out.kpis=[
+      {label:'Total Pendapatan',value:this.fmt(pf.realizedRev),bar:'var(--green,#1B6744)',delta:arr(dRev),deltaBg:dbg(dRev),deltaFg:dfg(dRev),sub:'vs '+prevY},
+      {label:'Total Belanja',value:this.fmt(pf.realizedExp),bar:'var(--green2,#289865)',delta:arr(dExp),deltaBg:dbg(dExp),deltaFg:dfg(dExp),sub:'vs '+prevY},
+      {label:'Pembiayaan Neto',value:this.fmt(Math.abs(pf.financing)),bar:'var(--gold,#D4AF37)',delta:pf.financing>=0?'Defisit':'Surplus',deltaBg:'rgba(212,175,55,.18)',deltaFg:'var(--gold-dark,#7A631A)',sub:'ditutup pembiayaan'},
+      {label:'Realisasi Anggaran',value:this.fmtPct(pf.serapan*100),bar:'var(--gold-dark,#7A631A)',delta:'Serapan',deltaBg:'rgba(40,152,101,.15)',deltaFg:'var(--green2,#289865)',sub:'pendapatan vs target'},
+    ];
+
+    // ===== interactive geo map (Indonesia -> NTB -> kab/kota) =====
+    const MD = (typeof window!=='undefined') ? window.NTB_MAP : null;
+    const level = S.mapLevel || 'indonesia';
+    out.mapAtIndonesia = level==='indonesia'; out.mapAtNtb = level==='ntb';
+    out.mapHint = level==='indonesia' ? 'Klik provinsi NTB untuk menelusuri kabupaten/kota.' : 'Klik daerah untuk membuka detail · warna menurut tingkat serapan.';
+    out.crumbIdnStyle = 'border:0;background:none;padding:0;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;color:'+(level==='indonesia'?'var(--gold-dark,#7A631A)':'var(--muted,#62736A)');
+    out.onMapIndonesia=()=>set({mapLevel:'indonesia',mapHover:null});
+    out.onMapNtb=()=>set({mapLevel:'ntb',mapHover:null});
+    out.mapHasHover=false; out.mapHoverName=''; out.mapHoverSub='';
+    if(MD){
+      // Indonesia level
+      out.idnViewBox=MD.indonesia.viewBox; out.idnMarkerX=MD.indonesia.ntbMarker[0]; out.idnMarkerY=MD.indonesia.ntbMarker[1];
+      out.idnProvinces=MD.indonesia.provinces.map(p=>{
+        const hov=p.isNTB && S.mapHover==='__ntbprov';
+        const fill=p.isNTB ? (hov?'var(--green2,#289865)':'var(--gold,#D4AF37)') : 'var(--mapland,#C2D6C6)';
+        return {path:p.path, fill, stroke:'var(--surface,#fff)', sw:p.isNTB?1:0.5,
+          style:'transition:fill .15s;'+(p.isNTB?'cursor:pointer':'pointer-events:none'),
+          onClick:p.isNTB?(()=>set({mapLevel:'ntb',mapHover:null})):null,
+          onEnter:p.isNTB?(()=>set({mapHover:'__ntbprov'})):null,
+          onLeave:p.isNTB?(()=>set({mapHover:null})):null};
+      });
+      if(S.mapHover==='__ntbprov'){ out.mapHasHover=true; out.mapHoverName='Nusa Tenggara Barat'; out.mapHoverSub='Klik untuk menelusuri 10 kab/kota'; }
+      // NTB level
+      out.ntbViewBox=MD.ntb.viewBox;
+      const nameById={}; this.regionsList().forEach(r=>nameById[r.id]=r);
+      out.ntbRegions=MD.ntb.regions.map(rg=>{
+        const f=this.fin(rg.id,year); const tt=Math.max(0,Math.min(1,(f.serapan-0.80)/0.185));
+        const fill='hsl(152 '+(36+tt*30)+'% '+(84-tt*54)+'%)';
+        const sel=S.region===rg.id, hov=S.mapHover===rg.id;
+        return {path:rg.path, fill, sw:sel?2.4:hov?2:0.8,
+          stroke:sel?'var(--gold,#D4AF37)':hov?'var(--gold,#D4AF37)':'var(--surface,#fff)',
+          style:'cursor:pointer;transition:fill .15s,stroke .15s;'+((sel||hov)?'filter:brightness(1.07)':''),
+          onClick:()=>set({region:rg.id,view:'detail'}),
+          onEnter:()=>set({mapHover:rg.id}), onLeave:()=>set({mapHover:null})};
+      });
+      out.ntbLabels=MD.ntb.regions.map(rg=>{
+        const f=this.fin(rg.id,year); const tt=Math.max(0,Math.min(1,(f.serapan-0.80)/0.185));
+        const r=nameById[rg.id]; const small=(rg.id==='mataram'||rg.id==='kobi');
+        return {x:rg.cx, y:rg.cy, short:r?r.short:rg.kabkot, size:small?7.5:9.5, color:tt>0.5?'#fff':'#163A26'};
+      });
+      if(level==='ntb' && S.mapHover && nameById[S.mapHover]){ const f=this.fin(S.mapHover,year); out.mapHasHover=true; out.mapHoverName=nameById[S.mapHover].name; out.mapHoverSub='Serapan '+this.fmtPct(f.serapan*100)+' · klik untuk detail'; }
+    } else {
+      out.idnViewBox='0 0 1000 385'; out.idnProvinces=[]; out.idnMarkerX=500; out.idnMarkerY=320;
+      out.ntbViewBox='0 0 760 251'; out.ntbRegions=[]; out.ntbLabels=[];
+    }
+
+
+    // comparison bars
+    const metrics=[{id:'pendapatan',label:'Pendapatan'},{id:'belanja',label:'Belanja'},{id:'pembiayaan',label:'Pembiayaan'}];
+    out.metricTabs=metrics.map(m=>({label:m.label,style:this.segTab(S.metric===m.id),onClick:()=>set({metric:m.id})}));
+    const mval=(f)=>S.metric==='pendapatan'?f.realizedRev:S.metric==='belanja'?f.realizedExp:Math.abs(f.financing);
+    const barData=kab.map(r=>({r,f:this.fin(r.id,year)}));
+    const maxBar=Math.max(...barData.map(d=>mval(d.f)))||1;
+    out.bars=barData.map(d=>({short:d.r.short,short2:'',color:S.region===d.r.id?'var(--gold,#D4AF37)':'var(--green2,#289865)',h:Math.round(mval(d.f)/maxBar*150),title:d.r.name+' · '+this.fmt(mval(d.f)),onClick:()=>set({region:d.r.id,view:'detail'})}));
+
+    // ranking by serapan (kartu di bawah peta)
+    const ranked=[...kab].map(r=>({r,f:this.fin(r.id,year)})).sort((a,b)=>b.f.serapan-a.f.serapan);
+    out.ranking=ranked.map((d,i)=>({rank:i+1,name:d.r.name,ser:this.fmtPct(d.f.serapan*100),w:Math.round((d.f.serapan-0.78)/0.21*100),onClick:()=>set({region:d.r.id,view:'detail'})}));
+
+    // ranking by selected metric (mengikuti Perbandingan Antar Daerah)
+    const metricLabel={pendapatan:'Pendapatan',belanja:'Belanja',pembiayaan:'Pembiayaan'}[S.metric]||'Pendapatan';
+    out.rankMetricTitle='Peringkat '+metricLabel;
+    const rankedM=[...kab].map(r=>({r,f:this.fin(r.id,year)})).sort((a,b)=>mval(b.f)-mval(a.f));
+    const maxM=Math.max(...rankedM.map(d=>mval(d.f)))||1;
+    out.rankingMetric=rankedM.map((d,i)=>({rank:i+1,name:d.r.name,val:this.fmtShort(mval(d.f)),w:Math.round(mval(d.f)/maxM*100),onClick:()=>set({region:d.r.id,view:'detail'})}));
+
+    // province trend (metrik bisa diganti: pendapatan/belanja/pembiayaan)
+    const tMetric=S.trendMetric||'pendapatan';
+    const tLabel={pendapatan:'Pendapatan',belanja:'Belanja',pembiayaan:'Pembiayaan'}[tMetric];
+    const tval=(f)=>tMetric==='pendapatan'?f.realizedRev:tMetric==='belanja'?f.realizedExp:Math.abs(f.financing);
+    out.trendTabs=metrics.map(m=>({label:m.label,style:this.segTab(tMetric===m.id),onClick:()=>set({trendMetric:m.id})}));
+    out.trendTitle='Tren Realisasi '+tLabel+' Provinsi';
+    out.trendSub='2021–2025 · '+(tMetric==='pembiayaan'?'pembiayaan neto':'realisasi '+tLabel.toLowerCase())+' daerah';
+    const yrs=[2021,2022,2023,2024,2025];
+    const provVals=yrs.map(y=>tval(this.fin('prov',y)));
+    const L1=this.buildLine(provVals,760,230);
+    out.trendPoints=L1.poly; out.trendArea=L1.area;
+    out.trendGrid=[0,1,2,3].map(i=>({y:L1.top+(L1.bot-L1.top)*i/3}));
+    out.trendDots=L1.pts.map((p,i)=>({x:p.x,y:p.y,ty:p.y-12,val:this.fmtShort(p.v),year:yrs[i]}));
+
+    // ===== DETAIL =====
+    const det=this.regionById(S.region), df=this.fin(S.region,year);
+    out.detRegion=S.region; out.detRegionName=det.name;
+    out.regionOpts=regions.map(r=>({v:r.id,label:r.name}));
+    out.onDetRegion=(e)=>set({region:e.target.value});
+    out.detKpis=[
+      {label:'Pendapatan',value:this.fmt(df.realizedRev),bar:'var(--green,#1B6744)',sub:'Realisasi '+this.fmtPct(df.serapan*100)},
+      {label:'Belanja',value:this.fmt(df.realizedExp),bar:'var(--green2,#289865)',sub:'Serapan '+this.fmtPct(df.expSer*100)},
+      {label:'PAD',value:this.fmt(df.padRealized),bar:'var(--gold,#D4AF37)',sub:'Efektivitas '+this.fmtPct(df.padEff*100)},
+      {label:'Belanja Modal',value:this.fmt(df.realizedExp*df.bd.modal),bar:'var(--gold-dark,#7A631A)',sub:this.fmtPct(df.bd.modal*100)+' dari belanja'},
+    ];
+    // donut
+    const segs=[
+      {label:'Belanja Pegawai',v:df.bd.pegawai,color:'#1B6744'},
+      {label:'Barang & Jasa',v:df.bd.barang,color:'#289865'},
+      {label:'Belanja Modal',v:df.bd.modal,color:'#D4AF37'},
+      {label:'Lainnya',v:df.bd.lain,color:'#E9D69B'},
+    ];
+    let acc=0; const stops=segs.map(s=>{const a=acc*360,b=(acc+s.v)*360;acc+=s.v;return s.color+' '+a.toFixed(1)+'deg '+b.toFixed(1)+'deg';});
+    out.donutBg='conic-gradient('+stops.join(',')+')';
+    out.detTotalExp=this.fmtShort(df.realizedExp);
+    out.donutLegend=segs.map(s=>({label:s.label,color:s.color,pct:this.fmtPct(s.v*100),val:this.fmt(df.realizedExp*s.v)}));
+    // detail trend
+    const detVals=yrs.map(y=>this.fin(S.region,y).realizedRev);
+    const L2=this.buildLine(detVals,700,200);
+    out.detTrendPoints=L2.poly; out.detTrendArea=L2.area;
+    out.detTrendDots=L2.pts.map((p,i)=>({x:p.x,y:p.y,ty:p.y-11,val:this.fmtShort(p.v),year:yrs[i]}));
+    // detail rows
+    const mkRow=(label,planned,realized,head)=>{const pct=planned?realized/planned*100:0;return {label,planned:this.fmt(planned),realized:this.fmt(realized),pct:this.fmtPct(pct),pctColor:pct>=90?'var(--green2,#289865)':pct>=75?'var(--gold-dark,#7A631A)':'#C24B33',fw:head?'800':'500',rowStyle:head?'background:var(--surface2,#EAF1EA)':''};};
+    out.detRows=[
+      mkRow('PENDAPATAN',df.plannedRev,df.realizedRev,true),
+      mkRow('  PAD',df.padPlanned,df.padRealized),
+      mkRow('  Dana Transfer',df.transfer,df.transferReal),
+      mkRow('BELANJA',df.plannedExp,df.realizedExp,true),
+      mkRow('  Belanja Pegawai',df.plannedExp*df.bd.pegawai,df.realizedExp*df.bd.pegawai),
+      mkRow('  Barang & Jasa',df.plannedExp*df.bd.barang,df.realizedExp*df.bd.barang),
+      mkRow('  Belanja Modal',df.plannedExp*df.bd.modal,df.realizedExp*df.bd.modal),
+    ];
+    out.goRekFromDetail=()=>set({view:'rekomendasi',rekRegion:S.region});
+
+    // ===== RASIO =====
+    const cfg=this.ratioCfg(); const cmp=S.compare;
+    out.regionChips=kab.map(r=>{const on=cmp.includes(r.id);
+      const style='height:32px;padding:0 13px;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;border:1px solid '+(on?'var(--green,#1B6744)':'var(--border,#dce6dd)')+';background:'+(on?'var(--green,#1B6744)':'var(--surface,#fff)')+';color:'+(on?'#fff':'var(--muted,#62736A)');
+      return {name:r.short,style,onClick:()=>{ let nc; if(on) nc=cmp.filter(x=>x!==r.id); else if(cmp.length>=4) nc=cmp; else nc=[...cmp,r.id]; if(nc.length===0) nc=[r.id]; set({compare:nc}); }};
+    });
+    const palette=['#1B6744','#D4AF37','#289865','#7A631A'];
+    const cmpReg=cmp.map((id,i)=>({id,name:this.regionById(id).name,color:palette[i%palette.length]}));
+    out.ratioCols=cmpReg.map(c=>({name:c.name,color:c.color}));
+    const keys=['ddf','rkk','efektivitas','efisiensi','bmodal','ketergantungan'];
+    out.ratioRows=keys.map(k=>({label:cfg[k].label,desc:cfg[k].desc,cells:cmp.map(id=>{const v=this.ratios(id,year)[k];const st=this.statusFor(k,v);return {val:this.fmtPct(v),label:st.label,pill:this.tonePill(st.tone)};})}));
+    // radar
+    const cx=160,cy=148,R=92,AX=[{k:'ddf',l:'DDF'},{k:'rkk',l:'Mandiri'},{k:'efektivitas',l:'Efektif'},{k:'efisiensi',l:'Efisien'},{k:'bmodal',l:'B.Modal'},{k:'ketergantungan',l:'Tergantung'}];
+    const RMAX={ddf:55,rkk:130,efektivitas:115,efisiensi:120,bmodal:42,ketergantungan:100};
+    const ang=i=>(-90+i*60)*Math.PI/180;
+    out.radarAxes=AX.map((a,i)=>{const c=Math.cos(ang(i)),s=Math.sin(ang(i));const lr=R+16;return {x:(cx+R*c).toFixed(1),y:(cy+R*s).toFixed(1),lx:(cx+lr*c).toFixed(1),ly:(cy+lr*s+3).toFixed(1),label:a.l,anchor:Math.abs(c)<0.3?'middle':c>0?'start':'end'};});
+    out.radarRings=[0.34,0.67,1].map(f=>({points:AX.map((a,i)=>(cx+R*f*Math.cos(ang(i))).toFixed(1)+','+(cy+R*f*Math.sin(ang(i))).toFixed(1)).join(' ')}));
+    out.radarShapes=cmpReg.map(c=>{const rt=this.ratios(c.id,year);const pts=AX.map((a,i)=>{const n=Math.max(0.05,Math.min(1,rt[a.k]/RMAX[a.k]));return (cx+R*n*Math.cos(ang(i))).toFixed(1)+','+(cy+R*n*Math.sin(ang(i))).toFixed(1);}).join(' ');return {points:pts,fill:c.color+'2e',stroke:c.color};});
+    out.radarLegend=cmpReg.map(c=>({name:c.name,color:c.color}));
+
+    // ===== REKOMENDASI =====
+    let pool=[];
+    if(S.rekRegion==='semua') kab.forEach(r=>pool.push(...this.recsFor(r.id,year)));
+    else pool.push(...this.recsFor(S.rekRegion,year));
+    const pw={Tinggi:0,Sedang:1,Rendah:2};
+    const filt=pool.filter(r=>S.rekPri==='semua'||r.priority===S.rekPri).sort((a,b)=>pw[a.priority]-pw[b.priority]);
+    const priColor=(p)=>p==='Tinggi'?'#C24B33':p==='Sedang'?'var(--gold-dark,#7A631A)':'var(--green2,#289865)';
+    const priPill=(p)=>p==='Tinggi'?'background:rgba(194,75,51,.15);color:#C24B33':p==='Sedang'?'background:rgba(212,175,55,.18);color:var(--gold-dark,#7A631A)':'background:rgba(40,152,101,.15);color:var(--green2,#289865)';
+    out.recCards=filt.map(r=>({region:r.region,priority:r.priority,accent:priColor(r.priority),pill:priPill(r.priority),title:r.title,reason:r.reason,refLabel:r.refLabel,onClick:()=>{ if(r.ref==='rasio') set({view:'rasio',compare:[r.rid]}); else if(r.ref==='detail'||r.ref==='serapan') set({view:'detail',region:r.rid}); }}));
+    out.recEmpty=filt.length===0;
+    const pris=[{id:'semua',label:'Semua'},{id:'Tinggi',label:'Tinggi'},{id:'Sedang',label:'Sedang'},{id:'Rendah',label:'Rendah'}];
+    out.priTabs=pris.map(p=>({label:p.label,style:this.pillTab(S.rekPri===p.id),onClick:()=>set({rekPri:p.id})}));
+    out.rekRegion=S.rekRegion;
+    out.rekRegionOpts=[{v:'semua',label:'Semua Daerah'},...kab.map(r=>({v:r.id,label:r.name}))];
+    out.onRekRegion=(e)=>set({rekRegion:e.target.value});
+    const cnt=(p)=>pool.filter(r=>r.priority===p).length;
+    out.priCounts=[{label:'Tinggi',n:cnt('Tinggi'),bg:'rgba(194,75,51,.12)',fg:'#C24B33'},{label:'Sedang',n:cnt('Sedang'),bg:'rgba(212,175,55,.14)',fg:'var(--gold-dark,#7A631A)'},{label:'Rendah',n:cnt('Rendah'),bg:'rgba(40,152,101,.12)',fg:'var(--green2,#289865)'}];
+
+    // ===== ADMIN =====
+    out.adminLocked=!S.authed; out.adminUnlocked=S.authed;
+    out.onLogin=()=>set({authed:true}); out.onLogout=()=>set({authed:false,importDone:false,importing:false});
+    out.uploadName=S.uploadName;
+    out.onPickFile=()=>set({uploadName:'APBD_'+(S.year)+'_Mataram_audited.xlsx'});
+    out.importing=S.importing; out.importDone=S.importDone; out.newRecCount=3;
+    out.importLabel=S.importing?'Memproses…':'Impor & Analisis AI';
+    out.importBtnStyle='width:100%;height:46px;margin-top:14px;border-radius:11px;border:0;background:'+(S.importing?'var(--muted,#62736A)':'linear-gradient(135deg,var(--green,#1B6744),var(--green2,#289865))')+';color:#fff;font-weight:700;font-size:13.5px;cursor:'+(S.importing?'wait':'pointer')+';font-family:inherit';
+    out.onImport=()=>this.runImport();
+    const steps=[
+      {label:'Mengunggah ke InsForge Storage',done:true},
+      {label:'Parsing & validasi data (SheetJS)',done:true},
+      {label:'Memperbarui ringkasan & rasio',done:S.importDone},
+      {label:'Analisis anomali via OpenRouter API',done:S.importDone},
+    ];
+    out.importSteps=steps.map(s=>({label:s.label,icon:s.done?'✓':'•',color:s.done?'var(--text,#16271E)':'var(--muted,#62736A)',dot:s.done?'background:var(--green2,#289865);color:#fff':'background:var(--surface2,#EAF1EA);color:var(--muted,#62736A)'}));
+    const okPill='background:rgba(40,152,101,.15);color:var(--green2,#289865)';
+    out.uploadHistory=[
+      {region:'Kota Mataram',year:2024,status:'Sukses',statusPill:okPill,time:'2 jam lalu'},
+      {region:'Kab. Lombok Timur',year:2024,status:'Sukses',statusPill:okPill,time:'kemarin'},
+      {region:'Provinsi NTB',year:2024,status:'Sukses',statusPill:okPill,time:'3 hari lalu'},
+      {region:'Kab. Bima',year:2023,status:'Sukses',statusPill:okPill,time:'1 mgg lalu'},
+      {region:'Kota Bima',year:2023,status:'Sukses',statusPill:okPill,time:'2 mgg lalu'},
+    ];
+
+    return out;
+  }
+}
+</script>
+</body>
+</html>
