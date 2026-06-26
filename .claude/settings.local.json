@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Write-Output \"=== Git installed? ===\"; git --version; Write-Output \"`n=== Existing SSH keys ===\"; if \\(Test-Path \"$env:USERPROFILE\\\\.ssh\"\\) { Get-ChildItem \"$env:USERPROFILE\\\\.ssh\" | Select-Object Name } else { Write-Output \"No .ssh directory\" }; Write-Output \"`n=== Is current dir a git repo? ===\"; if \\(Test-Path \".git\"\\) { Write-Output \"Yes\"; git remote -v } else { Write-Output \"No .git here\" })",
+      "PowerShell(if \\(-not \\(Test-Path \"$env:USERPROFILE\\\\.ssh\"\\)\\) { New-Item -ItemType Directory \"$env:USERPROFILE\\\\.ssh\" | Out-Null }; ssh-keygen -t ed25519 -C \"ramoness614@gmail.com\" -f \"$env:USERPROFILE\\\\.ssh\\\\id_ed25519\" -N '\"\"'; Write-Output \"`n=== Done. Public key below ===\")",
+      "PowerShell(Set-Service ssh-agent -StartupType Manual -ErrorAction SilentlyContinue; Start-Service ssh-agent -ErrorAction SilentlyContinue; ssh-add \"$env:USERPROFILE\\\\.ssh\\\\id_ed25519\"; Write-Output \"`n=== COPY THIS PUBLIC KEY ===\"; Get-Content \"$env:USERPROFILE\\\\.ssh\\\\id_ed25519.pub\")",
+      "PowerShell(ssh -T -o StrictHostKeyChecking=accept-new git@github.com)",
+      "PowerShell(git ls-remote git@github.com:ramoness614/Dashboard-LKPD-NTB.git)",
+      "PowerShell(Write-Output \"=== Archive size ===\"; Get-ChildItem \"DashboardLKPDNTBlocal.tar.gz\" | Select-Object Name, @{N='MB';E={[math]::Round\\($_.Length/1MB,1\\)}}; Write-Output \"`n=== node_modules present? ===\"; Get-ChildItem -Recurse -Directory -Filter node_modules -Depth 2 -ErrorAction SilentlyContinue | Select-Object FullName; Write-Output \"`n=== existing .gitignore? ===\"; if \\(Test-Path \".gitignore\"\\) { \"yes\" } else { \"no\" }; Write-Output \"`n=== frontend contents ===\"; Get-ChildItem \"frontend\" -Force | Select-Object Name)",
+      "PowerShell(git init)",
+      "PowerShell(git add .)",
+      "PowerShell(git branch -M main)",
+      "PowerShell(git remote add origin git@github.com:ramoness614/Dashboard-LKPD-NTB.git)",
+      "PowerShell(git push -u origin main)"
+    ]
+  }
+}
