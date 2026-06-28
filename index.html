@@ -274,6 +274,32 @@ const DataService = {
     if(R&&R.hasYearRegion(rid,year)) return R.audited(rid,year);
     return rid==='bima';
   },
+  // ---- SiLPA — realisasi 'SISA LEBIH/(KURANG) PEMBIAYAAN ANGGARAN-SiLPA/(SIKPA)' from LRA, in miliar ----
+  silpa(rid,year){
+    const st=this.statement(rid,year,'LRA');
+    if(st&&st.rows){
+      const row=st.rows.find(r=>/SISA\s+LEBIH.*PEMBIAYAAN\s+ANGGARAN/i.test(r.l));
+      if(row&&typeof row.v[1]==='number') return row.v[1]*this.lapFactorFor(rid,year);
+    }
+    return 0;
+  },
+  // ---- Komposisi belanja by category — realisasi from LRA, in miliar (incl. Hibah, Bansos, Tidak Terduga) ----
+  belanjaComp(rid,year){
+    const st=this.statement(rid,year,'LRA'), f=this.lapFactorFor(rid,year);
+    const pick=(re)=>{ if(!st||!st.rows) return 0; const row=st.rows.find(r=>re.test(r.l)); return row&&typeof row.v[1]==='number'?row.v[1]*f:0; };
+    const items=[
+      {label:'Belanja Pegawai',        value:pick(/^Belanja Pegawai$/i),  color:'#1B6744'},
+      {label:'Barang & Jasa',          value:pick(/Barang dan Jasa/i),    color:'#289865'},
+      {label:'Belanja Modal',          value:pick(/^Belanja Modal$/i),    color:'#D4AF37'},
+      {label:'Belanja Hibah',          value:pick(/Belanja Hibah/i),      color:'#7A631A'},
+      {label:'Belanja Bantuan Sosial', value:pick(/Bantuan Sosial/i),     color:'#5FA77E'},
+      {label:'Belanja Tidak Terduga',  value:pick(/Tidak Terduga/i),      color:'#C9A94B'},
+    ];
+    const total=pick(/^BELANJA DAERAH/i) || items.reduce((s,x)=>s+x.value,0);
+    const lain=Math.max(0, total - items.reduce((s,x)=>s+x.value,0));
+    items.push({label:'Lainnya', value:lain, color:'#E9D69B'});
+    return items;
+  },
   // per-region drivers for statement-based ratios; income side reuses summary() (consistent with Rasio tab)
   lapDrivers(rid,year){
     if(rid==='bima' && year===2025) return {PAD:209.559,Transfer:1825.057,TotalPend:2060.940,PADtarget:220.092,
@@ -419,17 +445,6 @@ function buildLine(vals,W,H){
 /* =========================================================================
  * ACTIONS
  * ========================================================================= */
-function exportCSV(){
-  const year=state.year, regs=DataService.regions();
-  let csv='Daerah,Pendapatan Realisasi,Belanja Realisasi,Serapan %,DDF,Kemandirian,Efektivitas PAD,Ketergantungan\n';
-  regs.forEach(r=>{ const f=DataService.summary(r.id,year),rt=DataService.ratios(r.id,year);
-    csv+=[r.name,Math.round(f.realizedRev),Math.round(f.realizedExp),(f.serapan*100).toFixed(1),rt.ddf.toFixed(1),rt.rkk.toFixed(1),rt.efektivitas.toFixed(1),rt.ketergantungan.toFixed(1)].join(',')+'\n';
-  });
-  try{
-    const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob);
-    const a=document.createElement('a'); a.href=url; a.download='apbd-ntb-'+year+'.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1500);
-  }catch(e){}
-}
 function runImport(){
   // demo/offline import animation (no backend configured)
   if(state.importing) return;
@@ -598,14 +613,14 @@ function viewBeranda(){
     </div>`;
 
   // ---- Perbandingan Antar Daerah (bars) ----
-  const metrics=[{id:'pendapatan',label:'Pendapatan'},{id:'belanja',label:'Belanja'},{id:'pembiayaan',label:'Pembiayaan'}];
-  const mval=(f)=>S.metric==='pendapatan'?f.realizedRev:S.metric==='belanja'?f.realizedExp:Math.abs(f.financing);
+  const metrics=[{id:'pendapatan',label:'Pendapatan'},{id:'belanja',label:'Belanja'},{id:'pembiayaan',label:'Pembiayaan'},{id:'silpa',label:'SiLPA'}];
+  const mval=(d)=>S.metric==='pendapatan'?d.f.realizedRev:S.metric==='belanja'?d.f.realizedExp:S.metric==='silpa'?DataService.silpa(d.r.id,year):Math.abs(d.f.financing);
   const metricTabs=metrics.map(m=>`<button ${da({act:'metric',val:m.id})} style="${segTab(S.metric===m.id)}">${m.label}</button>`).join('');
   const barData=kab.map(r=>({r,f:DataService.summary(r.id,year)}));
-  const maxBar=Math.max(...barData.map(d=>mval(d.f)))||1;
+  const maxBar=Math.max(...barData.map(d=>Math.abs(mval(d))))||1;
   const bars=barData.map(d=>`
-    <button ${da({act:'godetail',region:d.r.id})} title="${d.r.name} · ${fmt(mval(d.f))}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;cursor:pointer;height:100%;justify-content:flex-end">
-      <div style="width:100%;max-width:26px;border-radius:5px 5px 2px 2px;background:${S.region===d.r.id?'var(--gold,#D4AF37)':'var(--green2,#289865)'};height:${Math.round(mval(d.f)/maxBar*150)}px;transition:height .4s"></div>
+    <button ${da({act:'godetail',region:d.r.id})} title="${d.r.name} · ${fmt(mval(d))}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;cursor:pointer;height:100%;justify-content:flex-end">
+      <div style="width:100%;max-width:26px;border-radius:5px 5px 2px 2px;background:${S.region===d.r.id?'var(--gold,#D4AF37)':'var(--green2,#289865)'};height:${Math.round(Math.abs(mval(d))/maxBar*150)}px;transition:height .4s"></div>
       <div style="font-size:9px;font-weight:600;color:var(--muted,#62736A);writing-mode:vertical-rl;transform:rotate(180deg);height:38px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.r.short}</div>
     </button>`).join('');
   const barsCard=`<div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:17px 18px">
@@ -615,15 +630,15 @@ function viewBeranda(){
     </div>`;
 
   // ---- Ranking by metric ----
-  const metricLabel={pendapatan:'Pendapatan',belanja:'Belanja',pembiayaan:'Pembiayaan'}[S.metric];
-  const rankedM=[...kab].map(r=>({r,f:DataService.summary(r.id,year)})).sort((a,b)=>mval(b.f)-mval(a.f));
-  const maxM=Math.max(...rankedM.map(d=>mval(d.f)))||1;
+  const metricLabel={pendapatan:'Pendapatan',belanja:'Belanja',pembiayaan:'Pembiayaan',silpa:'SiLPA'}[S.metric];
+  const rankedM=[...kab].map(r=>({r,f:DataService.summary(r.id,year)})).sort((a,b)=>mval(b)-mval(a));
+  const maxM=Math.max(...rankedM.map(d=>Math.abs(mval(d))))||1;
   const rankMetric=rankedM.map((d,i)=>`
     <button ${da({act:'godetail',region:d.r.id})} style="display:flex;align-items:center;gap:10px;background:none;border:0;padding:0;cursor:pointer;text-align:left;width:100%">
       <span style="width:19px;font-size:12px;font-weight:800;color:var(--gold-dark,#7A631A);font-variant-numeric:tabular-nums">${i+1}</span>
       <span style="flex:1;min-width:0;font-size:12px;font-weight:600;color:${rankColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.r.name}</span>
-      <div style="width:64px;height:6px;border-radius:5px;background:var(--surface2,#EAF1EA);overflow:hidden"><div style="height:100%;border-radius:5px;background:var(--green2,#289865);width:${Math.round(mval(d.f)/maxM*100)}%"></div></div>
-      <span style="width:48px;text-align:right;font-size:12px;font-weight:800;color:${rankColor};font-variant-numeric:tabular-nums">${fmtShort(mval(d.f))}</span>
+      <div style="width:64px;height:6px;border-radius:5px;background:var(--surface2,#EAF1EA);overflow:hidden"><div style="height:100%;border-radius:5px;background:var(--green2,#289865);width:${Math.round(Math.abs(mval(d))/maxM*100)}%"></div></div>
+      <span style="width:48px;text-align:right;font-size:12px;font-weight:800;color:${rankColor};font-variant-numeric:tabular-nums">${fmtShort(mval(d))}</span>
     </button>`).join('');
   const rankMetricCard=`<div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:17px 18px;flex:1">
       <h3 style="font-size:14.5px;font-weight:700;margin-bottom:10px">Peringkat ${metricLabel}</h3>
@@ -632,10 +647,10 @@ function viewBeranda(){
 
   // ---- Province trend ----
   const tMetric=S.trendMetric;
-  const tLabel={pendapatan:'Pendapatan',belanja:'Belanja',pembiayaan:'Pembiayaan'}[tMetric];
-  const tval=(f)=>tMetric==='pendapatan'?f.realizedRev:tMetric==='belanja'?f.realizedExp:Math.abs(f.financing);
+  const tLabel={pendapatan:'Pendapatan',belanja:'Belanja',pembiayaan:'Pembiayaan',silpa:'SiLPA'}[tMetric];
+  const tval=(y)=>{const f=DataService.summary('prov',y);return tMetric==='pendapatan'?f.realizedRev:tMetric==='belanja'?f.realizedExp:tMetric==='silpa'?DataService.silpa('prov',y):Math.abs(f.financing);};
   const trendTabs=metrics.map(m=>`<button ${da({act:'trendmetric',val:m.id})} style="${segTab(tMetric===m.id)}">${m.label}</button>`).join('');
-  const provVals=YEARS.map(y=>tval(DataService.summary('prov',y)));
+  const provVals=YEARS.map(y=>tval(y));
   const L1=buildLine(provVals,760,230);
   const grid=[0,1,2,3].map(i=>`<line x1="44" y1="${L1.top+(L1.bot-L1.top)*i/3}" x2="752" y2="${L1.top+(L1.bot-L1.top)*i/3}" stroke="var(--border,#dce6dd)" stroke-width="1"/>`).join('');
   const dots=L1.pts.map((p,i)=>`
@@ -645,7 +660,7 @@ function viewBeranda(){
   const trendCard=`<div style="margin-top:14px;background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px">
       <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
         <div><h3 style="font-size:15px;font-weight:700">Tren Realisasi ${tLabel} Provinsi</h3>
-          <p style="font-size:12px;color:var(--muted,#62736A);margin-top:2px">2021–2025 · ${tMetric==='pembiayaan'?'pembiayaan neto':'realisasi '+tLabel.toLowerCase()} daerah</p></div>
+          <p style="font-size:12px;color:var(--muted,#62736A);margin-top:2px">2021–2025 · ${tMetric==='pembiayaan'?'pembiayaan neto daerah':tMetric==='silpa'?'sisa lebih/(kurang) pembiayaan anggaran (SiLPA)':'realisasi '+tLabel.toLowerCase()+' daerah'}</p></div>
         <div style="display:flex;gap:5px">${trendTabs}</div>
       </div>
       <svg viewBox="0 0 760 230" style="width:100%;height:auto;display:block">
@@ -693,12 +708,9 @@ function viewDetail(){
       <div style="font-size:11px;color:var(--muted,#62736A);margin-top:5px">${k.sub}</div>
     </div>`).join('');
 
-  const segs=[
-    {label:'Belanja Pegawai',v:df.bd.pegawai,color:'#1B6744'},
-    {label:'Barang & Jasa',v:df.bd.barang,color:'#289865'},
-    {label:'Belanja Modal',v:df.bd.modal,color:'#D4AF37'},
-    {label:'Lainnya',v:df.bd.lain,color:'#E9D69B'},
-  ];
+  const comp=DataService.belanjaComp(S.region,year);
+  const compTotal=comp.reduce((s,x)=>s+x.value,0)||1;
+  const segs=comp.map(c=>({label:c.label,v:c.value/compTotal,color:c.color}));
   let acc=0; const stops=segs.map(s=>{const a=acc*360,b=(acc+s.v)*360;acc+=s.v;return s.color+' '+a.toFixed(1)+'deg '+b.toFixed(1)+'deg';});
   const donutLegend=segs.map(s=>`<div style="display:flex;align-items:center;gap:9px">
       <span style="width:11px;height:11px;border-radius:3px;background:${s.color};flex-shrink:0"></span>
@@ -775,7 +787,7 @@ function viewDetail(){
       </div>
     </div>
     <div style="margin-top:14px;display:flex;justify-content:flex-end">
-      <button ${da({act:'gorek',region:S.region})} style="height:42px;padding:0 18px;border-radius:11px;border:0;background:linear-gradient(135deg,var(--green,#1B6744),var(--green2,#289865));color:#fff;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 8px 20px -8px rgba(27,103,68,.6)">Lihat Rekomendasi Pemeriksaan <span>→</span></button>
+      <button ${da({act:'gorek',region:S.region})} style="height:42px;padding:0 18px;border-radius:11px;border:0;background:linear-gradient(135deg,var(--green,#1B6744),var(--green2,#289865));color:#fff;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 8px 20px -8px rgba(27,103,68,.6)">Lihat Area Fokus <span>→</span></button>
     </div>
   </div>`;
 }
@@ -1019,7 +1031,7 @@ function viewRek(){
         <div style="width:6px;height:6px;border-radius:50%;background:var(--gold,#D4AF37)"></div>
         <span style="font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold-dark,#7A631A)">Berbasis AI · ${year}</span>
       </div>
-      <h1 style="font-family:'Lora',serif;font-weight:700;font-size:28px;letter-spacing:-.4px">Rekomendasi Pemeriksaan Selanjutnya</h1>
+      <h1 style="font-family:'Lora',serif;font-weight:700;font-size:28px;letter-spacing:-.4px">Area Fokus</h1>
       <p style="margin-top:7px;font-size:13.5px;color:var(--muted,#62736A);max-width:640px">Area fokus audit yang dihasilkan otomatis dari analisis anomali — serapan ekstrem, rasio "Perlu Perhatian", dan deviasi belanja.</p>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px">
@@ -1123,8 +1135,8 @@ function viewAdmin(){
 /* =========================================================================
  * SHELL + RENDER
  * ========================================================================= */
-const VIEWS=[{id:'beranda',label:'Beranda'},{id:'detail',label:'Detail Daerah'},{id:'laporan',label:'Laporan Keuangan'},{id:'rasio',label:'Rasio Keuangan'},{id:'rekomendasi',label:'Rekomendasi'},{id:'admin',label:'Admin'}];
-const CRUMB={beranda:'Ringkasan Provinsi',detail:'Detail Daerah',laporan:'Laporan Keuangan',rasio:'Analisis Rasio Kinerja',rekomendasi:'Rekomendasi Pemeriksaan',admin:'Panel Admin'};
+const VIEWS=[{id:'beranda',label:'Beranda'},{id:'detail',label:'Detail Daerah'},{id:'laporan',label:'Laporan Keuangan'},{id:'rasio',label:'Rasio Keuangan'},{id:'rekomendasi',label:'Area Fokus'},{id:'admin',label:'Admin'}];
+const CRUMB={beranda:'Ringkasan Provinsi',detail:'Detail Daerah',laporan:'Laporan Keuangan',rasio:'Analisis Rasio Kinerja',rekomendasi:'Area Fokus',admin:'Panel Admin'};
 
 function viewBody(){
   switch(state.view){
@@ -1178,7 +1190,6 @@ function render(){
               <select ${da({act:'year'})} style="border:0;background:transparent;font-weight:700;font-size:13px;color:var(--text,#16271E);outline:none;cursor:pointer">${years}</select>
             </div>
             <button ${da({act:'unit'})} title="Satuan" style="height:36px;padding:0 11px;border-radius:9px;border:1px solid var(--border,#dce6dd);background:var(--surface,#fff);color:var(--muted,#62736A);font-weight:700;font-size:12px;cursor:pointer">${S.unit==='miliar'?'Miliar':'Triliun'}</button>
-            <button ${da({act:'export'})} title="Ekspor CSV" style="height:36px;padding:0 12px;border-radius:9px;border:1px solid var(--border,#dce6dd);background:var(--surface,#fff);color:var(--text,#16271E);font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px"><span style="font-size:14px;line-height:1">↓</span>CSV</button>
             <button ${da({act:'dark'})} title="Mode gelap" style="width:36px;height:36px;border-radius:9px;border:1px solid var(--border,#dce6dd);background:var(--surface,#fff);color:var(--text,#16271E);font-weight:700;cursor:pointer;font-size:14px">${dark?'☀':'☾'}</button>
           </div>
         </div>
@@ -1212,7 +1223,6 @@ app.addEventListener('click',e=>{
     case 'trendmetric': setState({trendMetric:a.val}); break;
     case 'unit': setState({unit:state.unit==='miliar'?'triliun':'miliar'}); break;
     case 'dark': setState({dark:!getDark()}); break;
-    case 'export': exportCSV(); break;
     case 'laptab': setState({laporanTab:a.val}); break;
     case 'lapmode': setState({lapMode:a.val}); break;
     case 'lapchip': toggleChip('lapCompare',a.region); break;
