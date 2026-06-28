@@ -1,0 +1,15 @@
+# Only the static dashboard runs in the browser:
+#   index.html, insforge-config.js, web/insforge-client.js (fonts load from Google CDN).
+# Everything below is build/backend/source material — keep it out of the deploy upload.
+00. LKPD TA 2025/
+chats/
+data/
+frontend/
+functions/
+migrations/
+project/
+scripts/
+.claude/
+*.tar.gz
+*.md
+.env.example
