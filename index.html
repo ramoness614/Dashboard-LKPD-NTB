@@ -4,9 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dashboard APBD NTB — Transparansi Keuangan Daerah</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%23111111'/%3E%3Ctext%20x='16'%20y='26'%20font-family='Georgia,serif'%20font-size='27'%20font-weight='700'%20text-anchor='middle'%20fill='white'%3EL%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lora:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lora:wght@500;600;700&family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{min-height:100%}
@@ -17,6 +18,24 @@
   @keyframes ntbpulse{0%,100%{opacity:.55}50%{opacity:1}}
   .ntb-scroll::-webkit-scrollbar{height:8px;width:8px}
   .ntb-scroll::-webkit-scrollbar-thumb{background:var(--border,#dce6dd);border-radius:8px}
+  /* ---------- Responsive: tablet / mobile (Android + iOS) ---------- */
+  .hamburger{display:none}
+  .backdrop{display:none}
+  @media (max-width:860px){
+    .sidebar{position:fixed !important;top:0;left:0;z-index:60;transform:translateX(-100%);transition:transform .25s ease;box-shadow:10px 0 40px rgba(0,0,0,.35)}
+    .nav-open .sidebar{transform:translateX(0)}
+    .backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:55}
+    .nav-open .backdrop{display:block}
+    .hamburger{display:inline-flex !important;align-items:center;justify-content:center}
+    .l-split{grid-template-columns:1fr !important}
+    .l-kpi{grid-template-columns:repeat(2,1fr) !important}
+    main{padding:16px 13px 48px !important}
+    .hdr-row{padding:0 13px !important;gap:9px !important}
+    main h1{font-size:22px !important;line-height:1.15 !important}
+  }
+  @media (max-width:380px){
+    .l-kpi{grid-template-columns:1fr !important}
+  }
 </style>
 </head>
 <body>
@@ -358,6 +377,7 @@ const state = {
   mapLevel:'indonesia', mapHover:null, trendMetric:'pendapatan',
   authed:false, importing:false, importDone:false, uploadName:'Belum ada file dipilih',
   authError:null, importError:null, importMsg:'', newRecCount:3,
+  navOpen:false,
 };
 let pendingFile=null; // selected import file (not in render state)
 function setState(o){ Object.assign(state,o); render(); }
@@ -683,8 +703,8 @@ function viewBeranda(){
         <p style="margin-top:7px;font-size:13.5px;color:var(--muted,#62736A);max-width:560px">Rangkuman APBD 1 provinsi & 10 kabupaten/kota — bersumber dari laporan yang telah diaudit BPK.</p>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">${kpiHtml}</div>
-    <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:14px">
+    <div class="l-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">${kpiHtml}</div>
+    <div class="l-split" style="display:grid;grid-template-columns:1.55fr 1fr;gap:14px">
       <div style="display:flex;flex-direction:column;gap:14px;min-width:0">${mapCard}</div>
       <div style="display:flex;flex-direction:column;gap:14px;min-width:0">${barsCard}${rankMetricCard}</div>
     </div>
@@ -753,8 +773,8 @@ function viewDetail(){
       </div>
       <select ${da({act:'setregion'})} style="height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--border,#dce6dd);background:var(--surface,#fff);color:var(--text,#16271E);font-weight:700;font-size:13px;cursor:pointer">${regionOpts}</select>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px">${detKpis}</div>
-    <div style="display:grid;grid-template-columns:340px 1fr;gap:14px">
+    <div class="l-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px">${detKpis}</div>
+    <div class="l-split" style="display:grid;grid-template-columns:340px 1fr;gap:14px">
       <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px">
         <h3 style="font-size:14.5px;font-weight:700;margin-bottom:14px">Komposisi Belanja</h3>
         <div style="display:flex;justify-content:center;margin:4px 0 16px">
@@ -872,7 +892,7 @@ function viewLaporan(){
       <h2 style="font-family:'Lora',serif;font-weight:700;font-size:22px;letter-spacing:-.3px">Analisis Rasio atas Laporan Keuangan</h2>
       <p style="margin-top:6px;font-size:13px;color:var(--muted,#62736A);max-width:640px">Rasio dihitung langsung dari pos-pos Neraca, LRA, dan LO. Label menilai tiap rasio terhadap ambang batas standar keuangan daerah.</p>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">${ratioCats}</div>
+    <div class="l-split" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">${ratioCats}</div>
   </div>`;
 
   // compare mode
@@ -1040,7 +1060,7 @@ function viewRek(){
       <div style="flex:1"></div>
       <div style="display:flex;gap:8px">${counts}</div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">${cards}</div>
+    <div class="l-split" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">${cards}</div>
     ${filt.length===0?'<div style="text-align:center;padding:50px;color:var(--muted,#62736A);font-size:13px">Tidak ada rekomendasi untuk filter ini.</div>':''}
   </div>`;
 }
@@ -1050,7 +1070,7 @@ function viewAdmin(){
   if(!S.authed){
     return `<div>
       <div style="max-width:420px;margin:40px auto;background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:18px;padding:34px 32px;text-align:center;box-shadow:0 24px 60px -40px rgba(20,40,28,.5)">
-        <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--green,#1B6744),var(--green2,#289865));margin:0 auto 18px;display:flex;align-items:center;justify-content:center"><div style="width:18px;height:18px;background:var(--gold,#D4AF37);transform:rotate(45deg);border-radius:3px"></div></div>
+        <div style="width:52px;height:52px;border-radius:14px;background:#111;margin:0 auto 18px;display:flex;align-items:center;justify-content:center"><span style="font-family:'UnifrakturCook','Lora',serif;font-weight:700;font-size:40px;line-height:1;color:#fff">L</span></div>
         <h2 style="font-family:'Lora',serif;font-size:22px;font-weight:700">Panel Admin</h2>
         <p style="font-size:13px;color:var(--muted,#62736A);margin-top:8px;line-height:1.5">Akses terbatas untuk admin terpercaya. Masuk untuk mengunggah laporan BPK dan memperbarui data.</p>
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:22px;text-align:left">
@@ -1096,7 +1116,7 @@ function viewAdmin(){
       </div>
       <button ${da({act:'logout'})} style="height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--border,#dce6dd);background:var(--surface,#fff);color:var(--muted,#62736A);font-weight:700;font-size:12.5px;cursor:pointer">Keluar</button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="l-split" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:20px">
         <h3 style="font-size:14.5px;font-weight:700;margin-bottom:14px">Impor Data Baru</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
@@ -1162,11 +1182,12 @@ function render(){
   const years=YEARS_DYNAMIC.map(y=>`<option value="${y}" ${y===S.year?'selected':''}>TA ${y}</option>`).join('');
 
   document.getElementById('app').innerHTML=`
-  <div style="min-height:100vh;display:flex;background:${pageBg}">
-    <aside style="position:sticky;top:0;align-self:flex-start;height:100vh;width:238px;flex-shrink:0;display:flex;flex-direction:column;background:var(--surface,#fff);border-right:1px solid var(--border,#dce6dd)">
+  <div class="appwrap${S.navOpen?' nav-open':''}" style="min-height:100vh;display:flex;background:${pageBg}">
+    <div class="backdrop" ${da({act:'navclose'})}></div>
+    <aside class="sidebar" style="position:sticky;top:0;align-self:flex-start;height:100vh;width:238px;flex-shrink:0;display:flex;flex-direction:column;background:var(--surface,#fff);border-right:1px solid var(--border,#dce6dd)">
       <div style="padding:22px 20px 20px;display:flex;align-items:center;gap:12px">
-        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--green,#1B6744),var(--green2,#289865));display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px -3px rgba(27,103,68,.5);flex-shrink:0">
-          <div style="width:14px;height:14px;background:var(--gold,#D4AF37);transform:rotate(45deg);border-radius:2px"></div>
+        <div style="width:36px;height:36px;border-radius:10px;background:#111;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px -3px rgba(0,0,0,.5);flex-shrink:0">
+          <span style="font-family:'UnifrakturCook','Lora',serif;font-weight:700;font-size:27px;line-height:1;color:#fff">L</span>
         </div>
         <div style="line-height:1.1">
           <div style="font-family:'Lora',serif;font-weight:700;font-size:17px;letter-spacing:-.2px;color:var(--text,#16271E)">APBD NTB</div>
@@ -1181,8 +1202,9 @@ function render(){
 
     <div style="flex:1;min-width:0;display:flex;flex-direction:column;min-height:100vh">
       <header style="position:sticky;top:0;z-index:40;backdrop-filter:blur(12px);background:var(--headbg,rgba(241,245,240,.85));border-bottom:1px solid var(--border,#dce6dd)">
-        <div style="padding:0 26px;height:64px;display:flex;align-items:center;gap:14px">
-          <div style="flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--muted,#62736A)">${CRUMB[S.view]||''}</div>
+        <div class="hdr-row" style="padding:0 26px;height:64px;display:flex;align-items:center;gap:14px">
+          <button class="hamburger" ${da({act:'navtoggle'})} title="Menu" aria-label="Menu" style="width:38px;height:38px;border-radius:9px;border:1px solid var(--border,#dce6dd);background:var(--surface,#fff);color:var(--text,#16271E);cursor:pointer;font-size:17px;flex-shrink:0">☰</button>
+          <div style="flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--muted,#62736A);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${CRUMB[S.view]||''}</div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
             <div style="display:flex;align-items:center;gap:7px;padding:0 10px;height:36px;border-radius:9px;background:var(--surface,#fff);border:1px solid var(--border,#dce6dd)">
               <span style="font-size:11px;font-weight:600;color:var(--muted,#62736A)">Tahun</span>
@@ -1207,7 +1229,9 @@ app.addEventListener('click',e=>{
   const t=e.target.closest('[data-act]'); if(!t) return;
   const a=t.dataset;
   switch(a.act){
-    case 'view': setState({view:a.view}); break;
+    case 'view': setState({view:a.view,navOpen:false}); break;
+    case 'navtoggle': setState({navOpen:!state.navOpen}); break;
+    case 'navclose': setState({navOpen:false}); break;
     case 'godetail': setState({region:a.region,view:'detail'}); break;
     case 'mapidn': setState({mapLevel:'indonesia',mapHover:null}); break;
     case 'mapntb': setState({mapLevel:'ntb',mapHover:null}); break;
