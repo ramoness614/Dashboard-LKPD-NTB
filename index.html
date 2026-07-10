@@ -332,8 +332,13 @@ const DataService = {
     const kwjRatio=0.006+h('kw')*0.05;
     const TotalKwj=TotalAset*kwjRatio, KwjJP=TotalKwj*(0.9+h('jp')*0.1), Ekuitas=TotalAset-TotalKwj;
     const AsetLancar=KwjJP*(1.7+h('cr')*7.5), Persediaan=AsetLancar*(0.06+h('ps')*0.16), Kas=KwjJP*(0.4+h('ks')*3.4);
-    const PendLO=TotalPend*(0.93+h('plo')*0.07), BebanLO=PendLO*(0.92+h('opr')*0.13);
-    const fprev=this.summary(rid,Math.max(2021,year-1)), PendLOprev=fprev.realizedRev*(0.93+this._hash(rid+(year-1)+'plo')*0.07);
+    let PendLO=TotalPend*(0.93+h('plo')*0.07);
+    let PendLOprev=this.summary(rid,Math.max(2021,year-1)).realizedRev*(0.93+this._hash(rid+(year-1)+'plo')*0.07);
+    // prefer the real audited LO statement (2025 realisasi + its 2024 comparative) when available — no dummy prior year
+    const lo=this.statement(rid,year,'LO');
+    if(lo&&lo.rows){ const lf=this.lapFactorFor(rid,year), r=lo.rows.find(x=>/^PENDAPATAN\s*-\s*LO/i.test(x.l));
+      if(r){ if(typeof r.v[0]==='number') PendLO=r.v[0]*lf; if(typeof r.v[1]==='number') PendLOprev=r.v[1]*lf; } }
+    const BebanLO=PendLO*(0.92+h('opr')*0.13);
     const EkuitasAwal=Ekuitas/(1.0+(h('eg')*0.055-0.005));
     return {PAD,PADtarget,Transfer,TotalPend,TotalBelanja,BelModal,BelPegawai,Kas,AsetLancar,Persediaan,KwjJP,TotalAset,TotalKwj,Ekuitas,PendLO,BebanLO,PendLOprev,EkuitasAwal};
   },
@@ -535,8 +540,8 @@ function da(obj){ return Object.keys(obj).map(k=>'data-'+k+'="'+String(obj[k]).r
  * VIEW TEMPLATES
  * ========================================================================= */
 const PALETTE=['#1B6744','#D4AF37','#289865','#7A631A'];
-const YEARS=[2021,2022,2023,2024,2025];
-let YEARS_DYNAMIC=YEARS.slice(); // year selector list; widened from DB when InsForge is configured
+let YEARS=[2021,2022,2023,2024,2025]; // trend/history axis; narrowed to real DB years when InsForge is configured
+let YEARS_DYNAMIC=YEARS.slice(); // year selector list; set from DB when InsForge is configured
 
 function viewBeranda(){
   const S=state, year=S.year;
@@ -544,15 +549,18 @@ function viewBeranda(){
   const rankColor = getDark()?'#fff':'#000';
 
   // KPIs
-  const pf=DataService.summary('prov',year), prevY=Math.max(2021,year-1), pfp=DataService.summary('prov',prevY);
-  const dRev=year>2021?(pf.realizedRev/pfp.realizedRev-1)*100:0;
-  const dExp=year>2021?(pf.realizedExp/pfp.realizedExp-1)*100:0;
+  const pf=DataService.summary('prov',year);
+  const yIdx=YEARS.indexOf(year), hasPrev=yIdx>0; // only compare when a real prior (uploaded) year exists
+  const prevY=hasPrev?YEARS[yIdx-1]:null, pfp=hasPrev?DataService.summary('prov',prevY):null;
+  const dRev=hasPrev?(pf.realizedRev/pfp.realizedRev-1)*100:0;
+  const dExp=hasPrev?(pf.realizedExp/pfp.realizedExp-1)*100:0;
   const arr=(x)=>(x>=0?'▲ ':'▼ ')+Math.abs(x).toFixed(1)+'%';
   const dbg=(x)=>x>=0?'rgba(40,152,101,.15)':'rgba(194,75,51,.15)';
   const dfg=(x)=>x>=0?'var(--green2,#289865)':'#C24B33';
+  const nBg='var(--surface2,#EAF1EA)', nFg='var(--muted,#62736A)'; // neutral chip when no prior year to compare
   const kpis=[
-    {label:'Total Pendapatan',value:fmt(pf.realizedRev),bar:'var(--green,#1B6744)',delta:arr(dRev),deltaBg:dbg(dRev),deltaFg:dfg(dRev),sub:'vs '+prevY},
-    {label:'Total Belanja',value:fmt(pf.realizedExp),bar:'var(--green2,#289865)',delta:arr(dExp),deltaBg:dbg(dExp),deltaFg:dfg(dExp),sub:'vs '+prevY},
+    {label:'Total Pendapatan',value:fmt(pf.realizedRev),bar:'var(--green,#1B6744)',delta:hasPrev?arr(dRev):'TA '+year,deltaBg:hasPrev?dbg(dRev):nBg,deltaFg:hasPrev?dfg(dRev):nFg,sub:hasPrev?('vs '+prevY):'audited BPK'},
+    {label:'Total Belanja',value:fmt(pf.realizedExp),bar:'var(--green2,#289865)',delta:hasPrev?arr(dExp):'TA '+year,deltaBg:hasPrev?dbg(dExp):nBg,deltaFg:hasPrev?dfg(dExp):nFg,sub:hasPrev?('vs '+prevY):'audited BPK'},
     {label:'Pembiayaan Neto',value:fmt(Math.abs(pf.financing)),bar:'var(--gold,#D4AF37)',delta:pf.financing>=0?'Defisit':'Surplus',deltaBg:'rgba(212,175,55,.18)',deltaFg:'var(--gold-dark,#7A631A)',sub:'ditutup pembiayaan'},
     {label:'Realisasi Anggaran',value:fmtPct(pf.serapan*100),bar:'var(--gold-dark,#7A631A)',delta:'Serapan',deltaBg:'rgba(40,152,101,.15)',deltaFg:'var(--green2,#289865)',sub:'pendapatan vs target'},
   ];
@@ -677,10 +685,10 @@ function viewBeranda(){
     <circle cx="${p.x}" cy="${p.y}" r="5" fill="var(--surface,#fff)" stroke="var(--green,#1B6744)" stroke-width="3"/>
     <text x="${p.x}" y="${p.y-12}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text,#16271E)">${fmtShort(p.v)}</text>
     <text x="${p.x}" y="222" text-anchor="middle" font-size="11" font-weight="600" fill="var(--muted,#62736A)">${YEARS[i]}</text>`).join('');
-  const trendCard=`<div style="margin-top:14px;background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px">
+  const trendCard=YEARS.length<2?'':`<div style="margin-top:14px;background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px">
       <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
         <div><h3 style="font-size:15px;font-weight:700">Tren Realisasi ${tLabel} Provinsi</h3>
-          <p style="font-size:12px;color:var(--muted,#62736A);margin-top:2px">2021–2025 · ${tMetric==='pembiayaan'?'pembiayaan neto daerah':tMetric==='silpa'?'sisa lebih/(kurang) pembiayaan anggaran (SiLPA)':'realisasi '+tLabel.toLowerCase()+' daerah'}</p></div>
+          <p style="font-size:12px;color:var(--muted,#62736A);margin-top:2px">${YEARS[0]}–${YEARS[YEARS.length-1]} · ${tMetric==='pembiayaan'?'pembiayaan neto daerah':tMetric==='silpa'?'sisa lebih/(kurang) pembiayaan anggaran (SiLPA)':'realisasi '+tLabel.toLowerCase()+' daerah'}</p></div>
         <div style="display:flex;gap:5px">${trendTabs}</div>
       </div>
       <svg viewBox="0 0 760 230" style="width:100%;height:auto;display:block">
@@ -745,6 +753,16 @@ function viewDetail(){
     <circle cx="${p.x}" cy="${p.y}" r="4.5" fill="var(--surface,#fff)" stroke="var(--gold-dark,#7A631A)" stroke-width="3"/>
     <text x="${p.x}" y="${p.y-11}" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--text,#16271E)">${fmtShort(p.v)}</text>
     <text x="${p.x}" y="194" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--muted,#62736A)">${YEARS[i]}</text>`).join('');
+  const detTrend = YEARS.length<2 ? '' : `
+        <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px">
+          <h3 style="font-size:14.5px;font-weight:700;margin-bottom:6px">Tren Realisasi ${YEARS[0]}–${YEARS[YEARS.length-1]}</h3>
+          <svg viewBox="0 0 700 200" style="width:100%;height:auto;display:block">
+            <defs><linearGradient id="ntbArea2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--gold,#D4AF37)" stop-opacity="0.3"/><stop offset="100%" stop-color="var(--gold,#D4AF37)" stop-opacity="0"/></linearGradient></defs>
+            <path d="${L2.area}" fill="url(#ntbArea2)"/>
+            <polyline points="${L2.poly}" fill="none" stroke="var(--gold-dark,#7A631A)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+            ${dots2}
+          </svg>
+        </div>`;
 
   const mkRow=(label,planned,realized,head)=>{const pct=planned?realized/planned*100:0;return `<div style="display:grid;grid-template-columns:1fr 110px 110px 60px;gap:6px 10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border,#dce6dd);${head?'background:var(--surface2,#EAF1EA)':''}">
       <div style="font-size:12.5px;font-weight:${head?'800':'500'}">${label}</div>
@@ -788,15 +806,7 @@ function viewDetail(){
         <div style="display:flex;flex-direction:column;gap:9px">${donutLegend}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
-        <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px">
-          <h3 style="font-size:14.5px;font-weight:700;margin-bottom:6px">Tren Realisasi 2021–2025</h3>
-          <svg viewBox="0 0 700 200" style="width:100%;height:auto;display:block">
-            <defs><linearGradient id="ntbArea2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--gold,#D4AF37)" stop-opacity="0.3"/><stop offset="100%" stop-color="var(--gold,#D4AF37)" stop-opacity="0"/></linearGradient></defs>
-            <path d="${L2.area}" fill="url(#ntbArea2)"/>
-            <polyline points="${L2.poly}" fill="none" stroke="var(--gold-dark,#7A631A)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
-            ${dots2}
-          </svg>
-        </div>
+        ${detTrend}
         <div style="background:var(--surface,#fff);border:1px solid var(--border,#dce6dd);border-radius:16px;padding:18px 20px">
           <h3 style="font-size:14.5px;font-weight:700;margin-bottom:12px">Rincian Anggaran vs Realisasi</h3>
           <div style="display:grid;grid-template-columns:1fr 110px 110px 60px;gap:6px 10px;font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted,#62736A);padding-bottom:8px;border-bottom:1px solid var(--border,#dce6dd)">
@@ -1283,6 +1293,7 @@ app.addEventListener('mouseout',e=>{
         // sync available years from DB into the selector, keep current if present
         try { if (window.APBD.store.years && window.APBD.store.years.length) {
           YEARS_DYNAMIC = window.APBD.store.years.slice();
+          YEARS = window.APBD.store.years.slice(); // trends/history reflect only uploaded years — no dummy prior years
           if (!YEARS_DYNAMIC.includes(state.year)) state.year = YEARS_DYNAMIC[YEARS_DYNAMIC.length-1];
         } } catch(e){}
         render(); // repaint with live data
